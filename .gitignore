@@ -1,5 +1,6 @@
 # Prerequisites
 *.sublime-project
+*.DS_Store
 
 # Compiled Object files
 *.slo

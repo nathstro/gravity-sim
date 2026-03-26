@@ -1,0 +1,738 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"dis",
+				"distanceScale"
+			],
+			[
+				"dist",
+				"distanceScale"
+			],
+			[
+				"distanc",
+				"distanceScale"
+			],
+			[
+				"to",
+				"to_string"
+			],
+			[
+				"de",
+				"deltaTime"
+			],
+			[
+				"proces",
+				"processPhysics"
+			],
+			[
+				"p",
+				"push_back"
+			],
+			[
+				"add",
+				"addAcceleration"
+			],
+			[
+				"sphere",
+				"spherePos"
+			],
+			[
+				"light",
+				"lightColour"
+			],
+			[
+				"set",
+				"setVec4"
+			],
+			[
+				"s",
+				"specular"
+			],
+			[
+				"g",
+				"g"
+			],
+			[
+				"GLFW_P",
+				"GLFW_PRESS"
+			],
+			[
+				"glfw",
+				"glfwGetKey"
+			],
+			[
+				"c",
+				"mainCam"
+			],
+			[
+				"cam",
+				"cameraPos"
+			],
+			[
+				"ambi",
+				"ambientStrength"
+			],
+			[
+				"glBind",
+				"glBindVertexArray"
+			],
+			[
+				"camer",
+				"cameraPos"
+			],
+			[
+				"camera",
+				"cameraPos"
+			],
+			[
+				"handle",
+				"handleMouseMovement"
+			],
+			[
+				"WORLD_",
+				"WORLD_UP"
+			],
+			[
+				"upda",
+				"updateCameraVectors"
+			],
+			[
+				"update",
+				"updateCameraVectors"
+			],
+			[
+				"Camer",
+				"CameraMove"
+			],
+			[
+				"GL_NEA",
+				"GL_NEAREST_MIPMAP_NEAREST"
+			],
+			[
+				"sta",
+				"static_cast"
+			],
+			[
+				"stat",
+				"static_cast"
+			],
+			[
+				"last",
+				"xLast"
+			],
+			[
+				"glfwsetcu",
+				"glfwSetCursorPosCallback"
+			],
+			[
+				"glGetUni",
+				"glGetUniformLocation"
+			],
+			[
+				"ve",
+				"vec4"
+			],
+			[
+				"give",
+				"givenTexCoord"
+			],
+			[
+				"GL_TEXTURE_",
+				"GL_TEXTURE_2D"
+			],
+			[
+				"given",
+				"givenTexCoord"
+			],
+			[
+				"GL_UNSING",
+				"GL_UNSIGNED_INT"
+			],
+			[
+				"text",
+				"texturePath"
+			],
+			[
+				"se",
+				"setFloat"
+			],
+			[
+				"fragment",
+				"fragmentStream"
+			],
+			[
+				"string",
+				"stringstream"
+			],
+			[
+				"frag",
+				"fragmentPath"
+			],
+			[
+				"if",
+				"ifstream"
+			],
+			[
+				"glUniform",
+				"glUniform3f"
+			],
+			[
+				"vertex",
+				"vertexColourLocation"
+			],
+			[
+				"shad",
+				"shaderProgram2"
+			],
+			[
+				"shader",
+				"shaderProgram2"
+			],
+			[
+				"shade",
+				"shaderProgram2"
+			],
+			[
+				"__app",
+				"__APPLE__"
+			],
+			[
+				"IF",
+				"ifdef"
+			],
+			[
+				"ver",
+				"vertexShader"
+			],
+			[
+				"glGetPro",
+				"glGetProgramInfoLog"
+			],
+			[
+				"vert",
+				"vertexShader"
+			],
+			[
+				"glGetsh",
+				"glGetShaderInfoLog"
+			],
+			[
+				"fra",
+				"fragmentShaderSource"
+			],
+			[
+				"GL_Fra",
+				"GL_FRAGMENT_SHADER"
+			],
+			[
+				"GL_COMPI",
+				"GL_COMPILE_STATUS"
+			],
+			[
+				"verte",
+				"vertexShaderSource"
+			],
+			[
+				"GL_VER",
+				"GL_VERTEX_SHADER"
+			],
+			[
+				"core",
+				"glfwMakeContextCurrent"
+			],
+			[
+				"glfwGet",
+				"glfwGetKey"
+			],
+			[
+				"GLFW",
+				"GLFWwindow"
+			],
+			[
+				"glfwGetp",
+				"glfwGetProcAddress"
+			],
+			[
+				"GLFW_OPEN",
+				"GLFW_OPENGL_FORWARD_COMPAT"
+			],
+			[
+				"GLFW_OP",
+				"GLFW_OPENGL_COMPAT_PROFILE"
+			],
+			[
+				"glEnabl",
+				"glEnableVertexAttribArray"
+			],
+			[
+				"glDe",
+				"glDeleteShader"
+			],
+			[
+				"glGetProg",
+				"glGetProgramInfoLog"
+			],
+			[
+				"GL_",
+				"GL_COMPILE_STATUS"
+			],
+			[
+				"glA",
+				"glAttachShader"
+			],
+			[
+				"glCreate",
+				"glCreateProgram"
+			],
+			[
+				"glGetSha",
+				"glGetShaderInfoLog"
+			],
+			[
+				"GL_COM",
+				"GL_COMPILE_STATUS"
+			],
+			[
+				"center",
+				"centreY"
+			],
+			[
+				"GL_TRI",
+				"GL_TRIANGLE_FAN"
+			],
+			[
+				"ma",
+				"main\tmain()"
+			],
+			[
+				"get",
+				"getValue"
+			],
+			[
+				"new",
+				"newElement"
+			],
+			[
+				"ge",
+				"getPrevious"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "src/main.cpp",
+			"settings":
+			{
+				"buffer_size": 0,
+				"encoding": "UTF-8",
+				"line_ending": "Unix",
+				"name": "s"
+			},
+			"undo_stack":
+			[
+				[
+					3,
+					1,
+					"insert",
+					{
+						"characters": "s"
+					},
+					"AQAAAAAAAAAAAAAAAQAAAAAAAAAAAAAA",
+					"AQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPC/"
+				],
+				[
+					8,
+					1,
+					"hungry_backspace",
+					null,
+					"AQAAAAAAAAAAAAAAAAAAAAAAAAABAAAAcw",
+					"AQAAAAAAAAABAAAAAQAAAAAAAAABAAAAAAAAAAAAAAAAAPC/"
+				]
+			]
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"ter",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"pack",
+				"Package Control: List Packages"
+			],
+			[
+				"term",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"glsl",
+				"Set Syntax: GLSL"
+			],
+			[
+				"preferences lsp",
+				"Preferences: LSP Settings"
+			],
+			[
+				"enable",
+				"LSP: Enable Language Server in Project"
+			],
+			[
+				"disable",
+				"LSP: Disable Language Server in Project"
+			],
+			[
+				"linter",
+				"Preferences: SublimeLinter Settings"
+			],
+			[
+				"resta",
+				"LSP: Restart Server"
+			],
+			[
+				"lsp",
+				"Preferences: LSP Settings"
+			],
+			[
+				"linte",
+				"SublimeLinter: Reload SublimeLinter and its Plugins"
+			],
+			[
+				"llv",
+				"SublimeLinter: Lint This View"
+			],
+			[
+				"prefe",
+				"Preferences: Settings"
+			],
+			[
+				"termin",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"packa",
+				"Package Control: Remove Package"
+			],
+			[
+				"t",
+				"Terminus: Toggle Panel"
+			],
+			[
+				"pac",
+				"Package Control: Satisfy Packages"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/Users/nluistro/Stuff/projects/physics stuff/gravity-sim",
+		"/Users/nluistro/Stuff/projects/physics stuff/gravity-sim/src"
+	],
+	"file_history":
+	[
+		"/Users/nluistro/Stuff/projects/C++/planets/CMakeLists.txt",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Camera.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Camera.hpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/shaders/shader.frag",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Planet.hpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Renderer.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Renderer.hpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/main.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Texture.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Sphere.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/Sphere.hpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/shaders/shader.vert",
+		"/Users/nluistro/Stuff/projects/C++/planets/res/earth2048.png",
+		"/Users/nluistro/Stuff/projects/C++/planets/src/VAO.cpp",
+		"/Users/nluistro/Stuff/projects/C++/planets/planets.sublime-project",
+		"/Users/nluistro/Stuff/projects/C++/glProject/shaders/shader.frag",
+		"/Users/nluistro/Stuff/projects/C++/glProject/shaders/lightcubeshader.frag",
+		"/Users/nluistro/Stuff/projects/C++/glProject/shaders/shader.vert",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/main.cpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Camera.cpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Camera.hpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/CMakeLists.txt",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Texture.cpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Texture.hpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/shaders/lightcubeshader.vert",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Shader.hpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/Shader.cpp",
+		"/Users/nluistro/Stuff/projects/C++/glProject/src/stb_image.cpp",
+		"/Users/nluistro/Downloads/Grass_Block_ 28side_texture 29_JE2_BE2.png",
+		"/Users/nluistro/Stuff/projects/C++/glProject/shaders/shader.vs",
+		"/Users/nluistro/Stuff/projects/C++/glProject/gravity-sim.sublime-project",
+		"/Users/nluistro/Stuff/projects/C++/glProject/glProject.sublime-project",
+		"/Users/nluistro/Stuff/projects/C++/glProject/cmake/CMakeLists.txt",
+		"/Users/nluistro/Stuff/projects/C++/gravity-sim/lib/include/glad/glad.h",
+		"/Users/nluistro/Stuff/projects/C++/gravity-sim/.gitignore",
+		"/Users/nluistro/Stuff/projects/C++/gravity-sim/src/main.cpp",
+		"/Users/nluistro/Stuff/projects/C++/gravity-sim/gravity-sim.sublime-project",
+		"/Users/nluistro/Stuff/projects/C++/gravity-sim/CMakeLists.txt",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/src/LinkedList.cpp",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/include/LinkedList.hpp",
+		"/Users/nluistro/Library/Application Support/Sublime Text/Packages/User/CMake.sublime-build",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/src/main.cpp",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/LinkedList.sublime-project",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/CMakeLists.txt",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/include/Element.hpp",
+		"/Users/nluistro/Stuff/projects/C++/Testing/CMakePresets.json",
+		"/Users/nluistro/Stuff/projects/C++/LinkedList/src/untitled",
+		"/Users/nluistro/Stuff/projects/C++/Testing/src/main.cpp"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/main.cpp",
+					"selected": true,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"auto_complete_triggers":
+							[
+								{
+									"characters": "<",
+									"selector": "text.html, text.xml"
+								},
+								{
+									"rhs_empty": true,
+									"selector": "punctuation.accessor"
+								},
+								{
+									"characters": ".<>:\"/*",
+									"selector": "punctuation.accessor | (meta.preprocessor.include string - punctuation.definition.string.end)",
+									"server": "clangd"
+								}
+							],
+							"auto_name": "s",
+							"lsp_active": true,
+							"lsp_uri": "file:///Users/nluistro/Stuff/projects/physics%20stuff/gravity-sim/src/main.cpp",
+							"show_definitions": false,
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"stack_multiselect": false,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 35.0
+	},
+	"input":
+	{
+		"height": 47.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.LSP Log Panel":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"output.SublimeLinter":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"output.Terminus":
+	{
+		"height": 178.0,
+		"history":
+		[
+		]
+	},
+	"output.diagnostics":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"output.exec":
+	{
+		"height": 178.0,
+		"history":
+		[
+		]
+	},
+	"output.find_results":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"output.mdpopups":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"pinned_build_system": "CMake Build",
+	"project": "gravity-sim.sublime-project",
+	"replace":
+	{
+		"height": 66.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"i want these features in sublime text:"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+		"lsp_show_inlay_hints": false
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 206.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -19,6 +19,7 @@ class Renderer
 		float currentTime;
 		float oldTime;
 		float deltaTime;
+		float elapsedTime;
 		std::vector<Body> system;
 
 	public:

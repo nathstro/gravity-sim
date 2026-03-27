@@ -18,6 +18,7 @@ const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
 const float G = 6.674e-11;
 const float distScale = 1e11;
+const float TIMESTEP = 0.015f;
 float xLast = (float)WIDTH  / 2.0f;
 float yLast = (float)HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -74,7 +75,7 @@ void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
 }
 
 Renderer::Renderer()
-: window(nullptr), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f)
+: window(nullptr), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
 {}
 
 int Renderer::init()
@@ -178,7 +179,7 @@ void Renderer::processPhysics()
             if (&a == &b) continue;
 
             glm::vec3 direction = b.position - a.position;
-            float distance = glm::length(direction);
+            float distance = glm::length(direction) + 0.001f;
             float magnitudeAcceleration = (G * b.mass) / (distance * distance);
 
             acceleration += magnitudeAcceleration * glm::normalize(direction);
@@ -191,11 +192,9 @@ void Renderer::processPhysics()
     {
         glm::vec3 temp = a.position;
 
-        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * deltaTime * deltaTime);
+        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * TIMESTEP * TIMESTEP);
 
         a.previousPosition = temp;
-
-        std::cout << deltaTime << std::endl;
     }
 }
 
@@ -210,14 +209,11 @@ void Renderer::renderBody(Body& body)
 }
 
 void Renderer::processRendering()
-{
-    //currentTime = glfwGetTime();
-    //deltaTime = currentTime - oldTime;
-    //oldTime = currentTime;
-
-    currentTime = 0.0f;
-    deltaTime = 0.0167f;
+{// the game loop
+    currentTime = glfwGetTime();
+    deltaTime = currentTime - oldTime;
     oldTime = currentTime;
+    elapsedTime += deltaTime;
 
     key_callback(window, cam, deltaTime);
 
@@ -230,14 +226,22 @@ void Renderer::processRendering()
     shader->use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
     glm::mat4 view = cam->getViewMatrix();
-    glm::mat4 model = glm::mat4(1.0f);
+    glm::mat4 model = glm::mat4(0.0f);
 
     shader->setInt("tex", 0);
     shader->setMat4("projection", projection);
     shader->setMat4("view", view);
 
     glBindVertexArray(sphereVAO);
-    processPhysics();
+
+    while (elapsedTime >= TIMESTEP)
+    {
+        processPhysics();
+        elapsedTime -= TIMESTEP;
+    }
+
+    const double alpha = elapsedTime - deltaTime;
+
     for (auto& b : system)
     {
         renderBody(b);

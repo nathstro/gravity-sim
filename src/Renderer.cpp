@@ -3,6 +3,7 @@
 #include "GLFW/glfw3.h"
 #include "glm/detail/qualifier.hpp"
 #include "glm/fwd.hpp"
+#include "glm/geometric.hpp"
 #include "models/Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
@@ -15,6 +16,8 @@ const float ASPECT_RATIO = (float)WIDTH / (float)HEIGHT;
 const float FOV = 55.0f;
 const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
+const float G = 6.674e-11;
+const float distScale = 1e11;
 float xLast = (float)WIDTH  / 2.0f;
 float yLast = (float)HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -140,8 +143,11 @@ int Renderer::init()
     cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
     shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
 
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), 10e10f, 1.0f);
+    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f);
     system.push_back(earth);
+
+    Body moon(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 0.5f);
+    system.push_back(moon);
 
 	return 0;
 }
@@ -163,7 +169,34 @@ void Renderer::drop()
 
 void Renderer::processPhysics()
 {
-    
+    for (auto& a : system)
+    {
+        glm::vec3 acceleration(0.0f);
+
+        for (auto& b : system)
+        {
+            if (&a == &b) continue;
+
+            glm::vec3 direction = b.position - a.position;
+            float distance = glm::length(direction);
+            float magnitudeAcceleration = (G * b.mass) / (distance * distance);
+
+            acceleration += magnitudeAcceleration * glm::normalize(direction);
+        }
+
+        a.acceleration = acceleration;
+    }
+
+    for (auto&a : system)
+    {
+        glm::vec3 temp = a.position;
+
+        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * deltaTime * deltaTime);
+
+        a.previousPosition = temp;
+
+        std::cout << deltaTime << std::endl;
+    }
 }
 
 void Renderer::renderBody(Body& body)
@@ -171,14 +204,19 @@ void Renderer::renderBody(Body& body)
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
     model = glm::scale(model, glm::vec3(body.radius)); // scales
     
+    shader->setVec3("colour", body.colour);
     shader->setMat4("model", model);
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
 
 void Renderer::processRendering()
 {
-    currentTime = glfwGetTime();
-    deltaTime = currentTime - oldTime;
+    //currentTime = glfwGetTime();
+    //deltaTime = currentTime - oldTime;
+    //oldTime = currentTime;
+
+    currentTime = 0.0f;
+    deltaTime = 0.0167f;
     oldTime = currentTime;
 
     key_callback(window, cam, deltaTime);
@@ -186,6 +224,7 @@ void Renderer::processRendering()
     //render
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
     shader->use();
@@ -198,6 +237,7 @@ void Renderer::processRendering()
     shader->setMat4("view", view);
 
     glBindVertexArray(sphereVAO);
+    processPhysics();
     for (auto& b : system)
     {
         renderBody(b);

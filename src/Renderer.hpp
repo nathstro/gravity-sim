@@ -14,7 +14,8 @@ class Renderer
 		GLFWwindow* window;
 		Sphere baseSphere;
 		unsigned int sphereVAO, sphereVBO, sphereEBO;
-		Shader* shader;
+		unsigned int trailVAO, trailVBO;
+		Shader *sphereShader, *trailShader;
 		Camera* cam;
 		float currentTime;
 		float oldTime;
@@ -27,7 +28,7 @@ class Renderer
 		int init();
 		void drop();
 		void processPhysics();
-		void renderBody(Body& body);
+		void renderBody(Body& body, bool withTrail);
 		void processRendering();
 		void handleCameraMovement(float xOffset, float yOffset);
 		GLFWwindow* getWindow();

@@ -8,6 +8,7 @@
 #include "Shader.hpp"
 #include "Camera.hpp"
 #include <iostream>
+#include <thread>
 
 // constants
 const int WIDTH = 600;
@@ -22,6 +23,7 @@ const float TIMESTEP = 0.015f;
 float xLast = (float)WIDTH  / 2.0f;
 float yLast = (float)HEIGHT / 2.0f;
 bool firstMouse = true;
+bool trailsOn = true;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -72,10 +74,13 @@ void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
         cam->handleKeyboard(CameraMove::DOWN, deltaTime);
     }
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    }
 }
 
 Renderer::Renderer()
-: window(nullptr), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
+: window(nullptr), sphereShader(nullptr), trailShader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
 {}
 
 int Renderer::init()
@@ -140,15 +145,32 @@ int Renderer::init()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // Initialise camera and shader
+    // Creating trail objects
+    glGenVertexArrays(1, &trailVAO);
+    glGenBuffers(1, &trailVBO);
+
+    glBindVertexArray(trailVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glEnableVertexAttribArray(0);
+    
+    // Initialise camera and shaders
     cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-    shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
+    sphereShader = new Shader("shaders/shader.vert", "shaders/shader.frag");
+    trailShader = new Shader("shaders/trailShader.vert", "shaders/trailShader.frag");
 
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f);
-    system.push_back(earth);
+    Body blue(glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.1f);
+    system.push_back(blue);
 
-    Body moon(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 0.5f);
-    system.push_back(moon);
+    Body green(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 10e10f, 0.1f);
+    system.push_back(green);
+
+    Body red(glm::vec3(0.0f, 3.46f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 10e10f, 0.1f);
+    system.push_back(red);
+
+    Body pink(glm::vec3(0.0f, -3.46f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 1.0f), 10e10f, 0.1f);
+    system.push_back(pink);
 
 	return 0;
 }
@@ -159,8 +181,8 @@ void Renderer::drop()
     glDeleteBuffers(1, &sphereVBO);
     glDeleteBuffers(1, &sphereEBO);
 
-    delete shader;
-    shader = nullptr;
+    delete sphereShader;
+    sphereShader = nullptr;
     delete cam;
     cam = nullptr;
 
@@ -179,7 +201,7 @@ void Renderer::processPhysics()
             if (&a == &b) continue;
 
             glm::vec3 direction = b.position - a.position;
-            float distance = glm::length(direction) + 0.001f;
+            float distance = glm::length(direction) + 0.0001f;
             float magnitudeAcceleration = (G * b.mass) / (distance * distance);
 
             acceleration += magnitudeAcceleration * glm::normalize(direction);
@@ -191,27 +213,47 @@ void Renderer::processPhysics()
     for (auto&a : system)
     {
         glm::vec3 temp = a.position;
-
         a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * TIMESTEP * TIMESTEP);
-
         a.previousPosition = temp;
+        a.trail.push_back(a.position);
+        if (a.trail.size() > 300) a.trail.erase(a.trail.begin());
     }
+
+    std::cout << deltaTime << std::endl;
 }
 
-void Renderer::renderBody(Body& body)
+void Renderer::renderBody(Body& body, bool withTrail)
 {
+    glBindVertexArray(sphereVAO);
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
     model = glm::scale(model, glm::vec3(body.radius)); // scales
     
-    shader->setVec3("colour", body.colour);
-    shader->setMat4("model", model);
+    sphereShader->setVec3("colour", body.colour);
+    sphereShader->setMat4("model", model);
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
+
+    if (withTrail)
+    {
+        glBindVertexArray(trailVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
+        glBufferData(GL_ARRAY_BUFFER, body.trail.size() * sizeof(glm::vec3), body.trail.data(), GL_DYNAMIC_DRAW);
+
+        trailShader->use();
+        glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
+        glm::mat4 view = cam->getViewMatrix();
+
+        trailShader->setMat4("projection", projection);
+        trailShader->setMat4("view", view);
+        trailShader->setVec3("colour", body.colour);
+        glDrawArrays(GL_LINE_STRIP, 0, body.trail.size());
+    }
 }
 
 void Renderer::processRendering()
 {// the game loop
     currentTime = glfwGetTime();
     deltaTime = currentTime - oldTime;
+    if (deltaTime > 0.25) deltaTime = 0.25;
     oldTime = currentTime;
     elapsedTime += deltaTime;
 
@@ -223,16 +265,14 @@ void Renderer::processRendering()
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
-    shader->use();
+    sphereShader->use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
     glm::mat4 view = cam->getViewMatrix();
     glm::mat4 model = glm::mat4(0.0f);
 
-    shader->setInt("tex", 0);
-    shader->setMat4("projection", projection);
-    shader->setMat4("view", view);
-
-    glBindVertexArray(sphereVAO);
+    sphereShader->setInt("tex", 0);
+    sphereShader->setMat4("projection", projection);
+    sphereShader->setMat4("view", view);
 
     while (elapsedTime >= TIMESTEP)
     {
@@ -240,11 +280,9 @@ void Renderer::processRendering()
         elapsedTime -= TIMESTEP;
     }
 
-    const double alpha = elapsedTime - deltaTime;
-
     for (auto& b : system)
     {
-        renderBody(b);
+        renderBody(b, true);
     }
 
     glfwPollEvents();

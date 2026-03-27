@@ -225,7 +225,7 @@ void Renderer::processRendering()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
     shader->use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);

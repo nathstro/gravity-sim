@@ -1,10 +1,12 @@
 #include "Renderer.hpp"
 #include "Body.hpp"
 #include "GLFW/glfw3.h"
+#include "glm/detail/qualifier.hpp"
 #include "glm/fwd.hpp"
-#include "Sphere.hpp"
+#include "models/Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
+#include <iostream>
 
 // constants
 const int WIDTH = 600;
@@ -21,7 +23,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xPos, double yPos, Camera* cam) {
+void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
+    Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+
     xPos = static_cast<float>(xPos);
     yPos = static_cast<float>(yPos);
 
@@ -38,7 +42,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos, Camera* cam) {
     xLast = xPos;
     yLast = yPos;
 
-    cam->handleMouseMovement(xOffset, yOffset);
+    r->handleCameraMovement(xOffset, yOffset);
 }
 
 void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
@@ -67,7 +71,7 @@ void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
 }
 
 Renderer::Renderer()
-: window(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), shader(NULL, NULL), cam(glm::vec3(0.0f))
+: window(nullptr), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f)
 {}
 
 int Renderer::init()
@@ -95,6 +99,7 @@ int Renderer::init()
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetWindowUserPointer(window, this);
 
     // Load GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -103,6 +108,8 @@ int Renderer::init()
     }
 
     // Callbacks
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     // Creating sphere and objects
@@ -129,6 +136,10 @@ int Renderer::init()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    // Initialise camera and shader
+    cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
+    shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
+
     Body earth(glm::vec3(0.0f, 0.0f, 0.0f), 10e10f, 1.0f);
     system.push_back(earth);
 
@@ -137,21 +148,30 @@ int Renderer::init()
 
 void Renderer::drop()
 {
+    glDeleteBuffers(1, &sphereVAO);
+    glDeleteBuffers(1, &sphereVBO);
+    glDeleteBuffers(1, &sphereEBO);
+
+    delete shader;
+    shader = nullptr;
+    delete cam;
+    cam = nullptr;
+
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-/*void Renderer::processPhysics(Body body)
+void Renderer::processPhysics()
 {
+    
+}
 
-}*/
-
-void Renderer::renderBody(Body body)
+void Renderer::renderBody(Body& body)
 {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
     model = glm::scale(model, glm::vec3(body.radius)); // scales
     
-    shader.setMat4("model", model);
+    shader->setMat4("model", model);
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
 
@@ -160,22 +180,22 @@ void Renderer::processRendering()
     currentTime = glfwGetTime();
     deltaTime = currentTime - oldTime;
     oldTime = currentTime;
-    
-    key_callback(window, &cam, deltaTime);
+
+    key_callback(window, cam, deltaTime);
 
     //render
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
-    shader.use();
+    shader->use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
-    glm::mat4 view = cam.getViewMatrix();
+    glm::mat4 view = cam->getViewMatrix();
     glm::mat4 model = glm::mat4(1.0f);
 
-    shader.setInt("tex", 0);
-    shader.setMat4("projection", projection);
-    shader.setMat4("view", view);
+    shader->setInt("tex", 0);
+    shader->setMat4("projection", projection);
+    shader->setMat4("view", view);
 
     glBindVertexArray(sphereVAO);
     for (auto& b : system)
@@ -183,10 +203,16 @@ void Renderer::processRendering()
         renderBody(b);
     }
 
+    glfwPollEvents();
     glfwSwapBuffers(window);
 }
 
 GLFWwindow* Renderer::getWindow()
 {
 	return window;
+}
+
+void Renderer::handleCameraMovement(float xOffset, float yOffset)
+{
+    cam->handleMouseMovement(xOffset, yOffset);
 }

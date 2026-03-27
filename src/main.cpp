@@ -2,13 +2,7 @@
 #include <GLFW/glfw3.h>
 #include "Renderer.hpp"
 
-void processInput(GLFWwindow* window, float deltaTime) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-}
-
-int main(int argc, char const *argv[])
+int main()
 {
 	Renderer renderer;
 	if (renderer.init())
@@ -21,8 +15,6 @@ int main(int argc, char const *argv[])
 	while (!glfwWindowShouldClose(window))
 	{
 		renderer.processRendering();
-		processInput(window, 0.1);
-		glfwPollEvents();
 	}
 
 	renderer.drop();

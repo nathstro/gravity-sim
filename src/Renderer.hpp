@@ -3,7 +3,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "models/Sphere.hpp"
+#include "model/Sphere.hpp"
 #include "Body.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
@@ -19,12 +19,14 @@ class Renderer
 		float currentTime;
 		float oldTime;
 		float deltaTime;
+		std::vector<Body> system;
+
 	public:
 		Renderer();
 		int init();
 		void drop();
 		// void processPhysics(Body body);
 		void renderBody(Body body);
-		void processRendering(std::vector<Body>& toRender);
+		void processRendering();
 		GLFWwindow* getWindow();
 };

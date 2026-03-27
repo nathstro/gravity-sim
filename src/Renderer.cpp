@@ -2,7 +2,7 @@
 #include "Body.hpp"
 #include "GLFW/glfw3.h"
 #include "glm/fwd.hpp"
-#include "models/Sphere.hpp"
+#include "Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
 
@@ -13,13 +13,61 @@ const float ASPECT_RATIO = (float)WIDTH / (float)HEIGHT;
 const float FOV = 55.0f;
 const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
+float xLast = (float)WIDTH  / 2.0f;
+float yLast = (float)HEIGHT / 2.0f;
+bool firstMouse = true;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void mouse_callback(GLFWwindow* window, double xPos, double yPos, Camera* cam) {
+    xPos = static_cast<float>(xPos);
+    yPos = static_cast<float>(yPos);
+
+    if (firstMouse)
+    {
+        xLast = xPos;
+        yLast = yPos;
+        firstMouse = false;
+    }
+
+    // get displacement from previous frame
+    float xOffset = xPos - xLast;
+    float yOffset = yLast - yPos;
+    xLast = xPos;
+    yLast = yPos;
+
+    cam->handleMouseMovement(xOffset, yOffset);
+}
+
+void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
+{
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::FORWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::LEFT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::BACKWARD, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::RIGHT, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::UP, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        cam->handleKeyboard(CameraMove::DOWN, deltaTime);
+    }
+}
+
 Renderer::Renderer()
-: window(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), shader(NULL, NULL)
+: window(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), shader(NULL, NULL), cam(glm::vec3(0.0f))
 {}
 
 int Renderer::init()
@@ -81,6 +129,9 @@ int Renderer::init()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
+    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), 10e10f, 1.0f);
+    system.push_back(earth);
+
 	return 0;
 }
 
@@ -97,16 +148,20 @@ void Renderer::drop()
 
 void Renderer::renderBody(Body body)
 {
-
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
+    model = glm::scale(model, glm::vec3(body.radius)); // scales
+    
+    shader.setMat4("model", model);
+    glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
 
-void Renderer::processRendering(std::vector<Body>& toRender)
+void Renderer::processRendering()
 {
     currentTime = glfwGetTime();
     deltaTime = currentTime - oldTime;
     oldTime = currentTime;
     
-    //processInput(window, deltaTime);
+    key_callback(window, &cam, deltaTime);
 
     //render
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -116,13 +171,14 @@ void Renderer::processRendering(std::vector<Body>& toRender)
     shader.use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
     glm::mat4 view = cam.getViewMatrix();
-    
+    glm::mat4 model = glm::mat4(1.0f);
+
     shader.setInt("tex", 0);
-    shader.setMat4("view", view);
     shader.setMat4("projection", projection);
+    shader.setMat4("view", view);
 
     glBindVertexArray(sphereVAO);
-    for (auto& b : toRender)
+    for (auto& b : system)
     {
         renderBody(b);
     }

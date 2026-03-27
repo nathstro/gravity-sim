@@ -6,6 +6,7 @@ in vec3 normal;
 in vec2 texCoord;
 
 uniform sampler2D tex;
+uniform vec3 colour;
 
 void main()
 {
@@ -23,5 +24,5 @@ void main()
 
     vec3 result = ambient + diffuse + specular;*/
     // FragColour = mix(texture(tex, texCoord), vec4(result, 1.0f), 0.8f);
-    FragColour = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    FragColour = vec4(colour, 1.0f);
 }

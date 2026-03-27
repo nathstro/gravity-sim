@@ -1,20 +1,19 @@
-# Prerequisites
 *.sublime-project
 *.DS_Store
 
-# Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
 
-# Library
+# libs
 *.a
 
-# Build directories
+# directories
 build/
+.cache/
 
-# CMake generated files
+# cmake
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake

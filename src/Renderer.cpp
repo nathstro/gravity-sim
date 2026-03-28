@@ -7,7 +7,9 @@
 #include "models/Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
+#include <cstdlib>
 #include <iostream>
+#include <random>
 
 // constants
 const int WIDTH = 600;
@@ -19,6 +21,9 @@ const int SPHERE_STACKS = 18;
 const float G = 6.674e-11;
 const float distScale = 1e11;
 const float TIMESTEP = 0.015f;
+const int STAR_COUNT = 500;
+const float STAR_RADIUS = 50.0f;
+
 float xLast = (float)WIDTH  / 2.0f;
 float yLast = (float)HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -139,11 +144,48 @@ int Renderer::init()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
-
+    
     // Initialise camera and shader
     cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
     shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
 
+    // Initialise stars
+    std::mt19937 rng(0);
+    std::normal_distribution<float> starPos(0.0f, 1.0f);
+    std::normal_distribution<float> starSize(1.5f, 0.75f);
+
+    for (int i = 0; i < STAR_COUNT; i++)
+    {
+        float x = starPos(rng);
+        float y = starPos(rng);
+        float z = starPos(rng);
+        float normalize = (1 / glm::length(glm::vec3(x, y, z))) * STAR_RADIUS;
+        stars.push_back(x * normalize);
+        stars.push_back(y * normalize);
+        stars.push_back(z * normalize);
+        stars.push_back(starSize(rng));
+        stars.push_back((rand() / (float)RAND_MAX) * 6.28318530717f); // twinkle offset
+    }
+
+    glGenVertexArrays(1, &starsVAO);
+    glGenBuffers(1, &starsVBO);
+
+    glBindVertexArray(starsVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, starsVBO);
+    glBufferData(GL_ARRAY_BUFFER, stars.size() * sizeof(float), stars.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(4 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    starShader = new Shader("shaders/starShader.vert", "shaders/starShader.frag");
+    glEnable(GL_PROGRAM_POINT_SIZE);
+
+    // Initialise bodies
     Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f);
     system.push_back(earth);
 
@@ -208,6 +250,13 @@ void Renderer::renderBody(Body& body)
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
 
+void Renderer::renderStars()
+{
+    glBindVertexArray(starsVAO);
+
+    glDrawArrays(GL_POINTS, 0, stars.size());
+}
+
 void Renderer::processRendering()
 {// the game loop
     currentTime = glfwGetTime();
@@ -223,11 +272,18 @@ void Renderer::processRendering()
     glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
-    shader->use();
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
     glm::mat4 view = cam->getViewMatrix();
     glm::mat4 model = glm::mat4(0.0f);
 
+    starShader->use();
+    starShader->setFloat("time", currentTime);
+    starShader->setMat4("projection", projection);
+    starShader->setMat4("view", glm::mat4(glm::mat3(view)));
+    renderStars();
+
+    shader->use();
+    
     shader->setInt("tex", 0);
     shader->setMat4("projection", projection);
     shader->setMat4("view", view);
@@ -239,8 +295,6 @@ void Renderer::processRendering()
         processPhysics();
         elapsedTime -= TIMESTEP;
     }
-
-    const double alpha = elapsedTime - deltaTime;
 
     for (auto& b : system)
     {

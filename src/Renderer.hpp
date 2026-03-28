@@ -3,6 +3,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "glm/fwd.hpp"
 #include "models/Sphere.hpp"
 #include "Body.hpp"
 #include "Shader.hpp"
@@ -14,13 +15,15 @@ class Renderer
 		GLFWwindow* window;
 		Sphere baseSphere;
 		unsigned int sphereVAO, sphereVBO, sphereEBO;
-		Shader* shader;
+		unsigned int starsVAO, starsVBO;
+		Shader *shader, *starShader;
 		Camera* cam;
 		float currentTime;
 		float oldTime;
 		float deltaTime;
 		float elapsedTime;
 		std::vector<Body> system;
+		std::vector<float> stars;
 
 	public:
 		Renderer();
@@ -28,6 +31,7 @@ class Renderer
 		void drop();
 		void processPhysics();
 		void renderBody(Body& body);
+		void renderStars();
 		void processRendering();
 		void handleCameraMovement(float xOffset, float yOffset);
 		GLFWwindow* getWindow();

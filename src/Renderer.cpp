@@ -160,17 +160,11 @@ int Renderer::init()
     sphereShader = new Shader("shaders/shader.vert", "shaders/shader.frag");
     trailShader = new Shader("shaders/trailShader.vert", "shaders/trailShader.frag");
 
-    Body blue(glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.1f);
+    Body blue(glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.1f);
     system.push_back(blue);
 
-    Body green(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 10e10f, 0.1f);
+    Body green(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.1f), glm::vec3(0.0f, 1.0f, 0.0f), 10e10f, 0.1f);
     system.push_back(green);
-
-    Body red(glm::vec3(0.0f, 3.46f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), 10e10f, 0.1f);
-    system.push_back(red);
-
-    Body pink(glm::vec3(0.0f, -3.46f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 1.0f), 10e10f, 0.1f);
-    system.push_back(pink);
 
 	return 0;
 }
@@ -216,7 +210,6 @@ void Renderer::processPhysics()
         a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * TIMESTEP * TIMESTEP);
         a.previousPosition = temp;
         a.trail.push_back(a.position);
-        if (a.trail.size() > 300) a.trail.erase(a.trail.begin());
     }
 
     std::cout << deltaTime << std::endl;
@@ -246,6 +239,7 @@ void Renderer::renderBody(Body& body, bool withTrail)
         trailShader->setMat4("view", view);
         trailShader->setVec3("colour", body.colour);
         glDrawArrays(GL_LINE_STRIP, 0, body.trail.size());
+        sphereShader->use();
     }
 }
 

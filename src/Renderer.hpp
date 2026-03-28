@@ -32,6 +32,7 @@ class Renderer
 		void processPhysics();
 		void renderBody(Body& body);
 		void renderStars();
+		void processLighting();
 		void processRendering();
 		void handleCameraMovement(float xOffset, float yOffset);
 		GLFWwindow* getWindow();

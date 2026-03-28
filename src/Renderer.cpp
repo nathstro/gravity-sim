@@ -7,9 +7,11 @@
 #include "models/Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
+#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <string>
 
 // constants
 const int WIDTH = 600;
@@ -186,20 +188,24 @@ int Renderer::init()
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Initialise bodies
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f);
+    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f, false);
     system.push_back(earth);
 
-    Body moon(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 0.5f);
+    Body moon(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(-1.5f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 0.5f, true);
     system.push_back(moon);
-
+    
+    glEnable(GL_DEPTH_TEST);
 	return 0;
 }
 
 void Renderer::drop()
 {
-    glDeleteBuffers(1, &sphereVAO);
+    glDeleteVertexArrays(1, &sphereVAO);
     glDeleteBuffers(1, &sphereVBO);
     glDeleteBuffers(1, &sphereEBO);
+
+    glDeleteVertexArrays(1, &starsVAO);
+    glDeleteBuffers(1, &starsVBO);
 
     delete shader;
     shader = nullptr;
@@ -208,6 +214,28 @@ void Renderer::drop()
 
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+void Renderer::processLighting()
+{
+    // get emissive bodies
+    std::vector<Body> emissives;
+    for (auto& a : system)
+    {
+        if (a.emissive) emissives.push_back(a);
+    }
+
+    // set properties
+    shader->setInt("emissiveCount", emissives.size());
+    for (size_t i = 0; i < emissives.size(); i++)
+    {
+        std::string index = "emissiveBodies[" + std::to_string(i) + "].";
+        shader->setVec3(index + "position", emissives[i].position);
+        shader->setVec3(index + "colour", emissives[i].colour);
+        shader->setFloat(index + "constant", 1.0f);
+        shader->setFloat(index + "linear", 0.09f);
+        shader->setFloat(index + "quadratic", 0.032f);
+    }
 }
 
 void Renderer::processPhysics()
@@ -244,9 +272,12 @@ void Renderer::renderBody(Body& body)
 {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
     model = glm::scale(model, glm::vec3(body.radius)); // scales
-    
+
     shader->setVec3("colour", body.colour);
+    shader->setVec3("viewPos", cam->getPosition());
     shader->setMat4("model", model);
+    shader->setBool("emissive", body.emissive);
+    
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
 
@@ -254,7 +285,7 @@ void Renderer::renderStars()
 {
     glBindVertexArray(starsVAO);
 
-    glDrawArrays(GL_POINTS, 0, stars.size());
+    glDrawArrays(GL_POINTS, 0, stars.size() / 5);
 }
 
 void Renderer::processRendering()
@@ -269,7 +300,6 @@ void Renderer::processRendering()
     //render
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
     glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
@@ -295,6 +325,10 @@ void Renderer::processRendering()
         processPhysics();
         elapsedTime -= TIMESTEP;
     }
+    
+    processLighting();
+    //shader->setVec3("lightPos", emissiveBodies[0]->position);
+    //shader->setVec3("lightColour", emissiveBodies[0]->colour);
 
     for (auto& b : system)
     {

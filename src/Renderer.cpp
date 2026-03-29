@@ -10,13 +10,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <locale>
 #include <random>
 #include <string>
 
 // constants
-const int WIDTH = 600;
-const int HEIGHT = 600;
-const float ASPECT_RATIO = (float)WIDTH / (float)HEIGHT;
+const int INIT_WIDTH = 800;
+const int INIT_HEIGHT = 600;
 const float FOV = 55.0f;
 const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
@@ -26,15 +26,23 @@ const float TIMESTEP = 0.015f;
 const int STAR_COUNT = 500;
 const float STAR_RADIUS = 50.0f;
 
-float xLast = (float)WIDTH  / 2.0f;
-float yLast = (float)HEIGHT / 2.0f;
+float xLast = (float)INIT_WIDTH  / 2.0f;
+float yLast = (float)INIT_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+    Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+    r->updateWindowSize(width, height);
+
+    int fbWidth, fbHeight;
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+
+    r->updateFramebufferSize(fbWidth, fbHeight);
+
     glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
+void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
 
     xPos = static_cast<float>(xPos);
@@ -56,7 +64,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
     r->handleCameraMovement(xOffset, yOffset);
 }
 
-void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
+void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -82,7 +90,7 @@ void key_callback(GLFWwindow* window, Camera* cam, float deltaTime)
 }
 
 Renderer::Renderer()
-: window(nullptr), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
+: window(nullptr), width(INIT_WIDTH), height(INIT_HEIGHT), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
 {}
 
 int Renderer::init()
@@ -102,7 +110,7 @@ int Renderer::init()
 	#endif
 
     // Initialise window
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Gravity Simulator", NULL, NULL);
+    window = glfwCreateWindow(INIT_WIDTH, INIT_HEIGHT, "Gravity Simulator", NULL, NULL);
     if (window == NULL) {
         std::cout << "ERROR: failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -111,6 +119,7 @@ int Renderer::init()
 
     glfwMakeContextCurrent(window);
     glfwSetWindowUserPointer(window, this);
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
 
     // Load GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -120,8 +129,8 @@ int Renderer::init()
 
     // Callbacks
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     // Creating sphere and objects
     baseSphere = Sphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS);
@@ -146,6 +155,105 @@ int Renderer::init()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    // Initialise framebuffer
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+    glGenTextures(1, &colourBufferTexture);
+    glBindTexture(GL_TEXTURE_2D, colourBufferTexture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fbWidth, fbHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    //
+
+    glGenTextures(1, &lightBufferTexture);
+    glBindTexture(GL_TEXTURE_2D, lightBufferTexture);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, fbWidth, fbHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    //
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colourBufferTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, lightBufferTexture, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    //
+
+    unsigned int attachments[2] = {
+        GL_COLOR_ATTACHMENT0,
+        GL_COLOR_ATTACHMENT1
+    };
+
+    glDrawBuffers(2, attachments);
+
+    glGenRenderbuffers(1, &RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, fbWidth, fbHeight);
+
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    {
+        std::cout << "ERROR: framebuffer incomplete" << std::endl;
+        return -1;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    for (int i = 0; i < 2; i++)
+    {
+        glGenFramebuffers(1, &pingpongFBO[i]);
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+
+        glGenTextures(1, &pingpongTexture[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongTexture[i]);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, fbWidth, fbHeight, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongTexture[i], 0);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            std::cout << "ERROR: ping pong framebuffer incomplete" << std::endl;
+            return -1;
+        }
+    }
+
+    // Framebuffer quad VAO
+    float quadVertices[] = {
+        // positions   // texCoords
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
+    };
+
+    glGenVertexArrays(1, &quadVAO);
+    glGenBuffers(1, &quadVBO);
+    glBindVertexArray(quadVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     
     // Initialise camera and shader
     cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
@@ -188,13 +296,24 @@ int Renderer::init()
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Initialise bodies
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 1.0f, false);
+    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
     system.push_back(earth);
 
-    Body moon(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(-1.5f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 0.5f, true);
-    system.push_back(moon);
-    
+    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 8e10f, 1.0f, true);
+    system.push_back(sun);
+
+    blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
+    postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
     glEnable(GL_DEPTH_TEST);
+    
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+
+    int fbw, fbh;
+    glfwGetFramebufferSize(window, &fbw, &fbh);
+
+    std::cout << "Window: " << w << "x" << h << "\n";
+    std::cout << "Framebuffer: " << fbw << "x" << fbh << "\n";
 	return 0;
 }
 
@@ -206,6 +325,8 @@ void Renderer::drop()
 
     glDeleteVertexArrays(1, &starsVAO);
     glDeleteBuffers(1, &starsVBO);
+
+    glDeleteFramebuffers(1, &FBO);
 
     delete shader;
     shader = nullptr;
@@ -227,14 +348,18 @@ void Renderer::processLighting()
 
     // set properties
     shader->setInt("emissiveCount", emissives.size());
-    for (size_t i = 0; i < emissives.size(); i++)
+
+    if (emissives.size() > 0)
     {
-        std::string index = "emissiveBodies[" + std::to_string(i) + "].";
-        shader->setVec3(index + "position", emissives[i].position);
-        shader->setVec3(index + "colour", emissives[i].colour);
-        shader->setFloat(index + "constant", 1.0f);
-        shader->setFloat(index + "linear", 0.09f);
-        shader->setFloat(index + "quadratic", 0.032f);
+        for (size_t i = 0; i < emissives.size(); i++)
+        {
+            std::string index = "emissiveBodies[" + std::to_string(i) + "].";
+            shader->setVec3(index + "position", emissives[i].position);
+            shader->setVec3(index + "colour", emissives[i].colour);
+            shader->setFloat(index + "constant", 1.0f);
+            shader->setFloat(index + "linear", 0.045f);
+            shader->setFloat(index + "quadratic", 0.0075f);
+        }
     }
 }
 
@@ -261,9 +386,7 @@ void Renderer::processPhysics()
     for (auto&a : system)
     {
         glm::vec3 temp = a.position;
-
         a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * TIMESTEP * TIMESTEP);
-
         a.previousPosition = temp;
     }
 }
@@ -288,6 +411,32 @@ void Renderer::renderStars()
     glDrawArrays(GL_POINTS, 0, stars.size() / 5);
 }
 
+void Renderer::processBloom(int passes)
+{
+    bool horizontal = true;
+    bool first = true;
+
+    blurShader->use();
+    blurShader->setInt("image", 0);
+
+    for (int i = 0; i < passes; i++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+        glActiveTexture(GL_TEXTURE0);
+
+        blurShader->setBool("horizontal", horizontal);
+
+        glBindTexture(GL_TEXTURE_2D, first ? lightBufferTexture : pingpongTexture[!horizontal]);
+
+        glBindVertexArray(quadVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6); 
+        glBindVertexArray(0);
+
+        horizontal = !horizontal;
+        if (first) first = false;
+    }
+}
+
 void Renderer::processRendering()
 {// the game loop
     currentTime = glfwGetTime();
@@ -295,14 +444,17 @@ void Renderer::processRendering()
     oldTime = currentTime;
     elapsedTime += deltaTime;
 
-    key_callback(window, cam, deltaTime);
+    keyCallback(window, cam, deltaTime);
 
-    //render
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
 
-    glm::mat4 projection = glm::perspective(glm::radians(FOV), ASPECT_RATIO, 0.1f, 100.0f);
+    // first pass
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+    glEnable(GL_DEPTH_TEST);
+
+    glm::mat4 projection = glm::perspective(glm::radians(FOV), (float)fbWidth / fbHeight, 0.1f, 100.0f);
     glm::mat4 view = cam->getViewMatrix();
     glm::mat4 model = glm::mat4(0.0f);
 
@@ -327,13 +479,33 @@ void Renderer::processRendering()
     }
     
     processLighting();
-    //shader->setVec3("lightPos", emissiveBodies[0]->position);
-    //shader->setVec3("lightColour", emissiveBodies[0]->colour);
 
     for (auto& b : system)
     {
         renderBody(b);
     }
+
+    processBloom(10);
+      
+    // second pass
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); 
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    postProcessingShader->use();
+    postProcessingShader->setInt("screenTexture", 0);
+    postProcessingShader->setInt("bloomTexture", 1);
+
+    glBindVertexArray(quadVAO);
+    glDisable(GL_DEPTH_TEST);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, colourBufferTexture);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, pingpongTexture[1]);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6); 
 
     glfwPollEvents();
     glfwSwapBuffers(window);
@@ -347,4 +519,18 @@ GLFWwindow* Renderer::getWindow()
 void Renderer::handleCameraMovement(float xOffset, float yOffset)
 {
     cam->handleMouseMovement(xOffset, yOffset);
+}
+
+void Renderer::updateWindowSize(int width, int height)
+{
+    this->width = width;
+    this->height = height;
+}
+
+void Renderer::updateFramebufferSize(int fbWidth, int fbHeight)
+{
+    this->fbWidth = fbWidth;
+    this->fbHeight = fbHeight;
+
+    // to do: update texture
 }

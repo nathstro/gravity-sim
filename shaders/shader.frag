@@ -1,5 +1,6 @@
 #version 330 core
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BloomColor;
 
 in vec3 fragPos;
 in vec3 normal;
@@ -28,9 +29,9 @@ uniform Light emissiveBodies[MAX_LIGHTS];
 
 vec3 calculateLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-    float ambientStrength = 0.1;
-    float diffuseStrength = 0.8;
-    float specularStrength = 0.;
+    const float ambientStrength = 0.1;
+    const float diffuseStrength = 0.8;
+    const float specularStrength = 0.0;
 
     float distance = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance)); 
@@ -52,6 +53,12 @@ void main()
 {
     if (emissive) {
         FragColor = vec4(colour, 1.0);
+        BloomColor = vec4(colour * 3.0, 1.0);
+        return;
+    }
+
+    else if (emissiveCount == 0) {
+        FragColor = vec4(colour * 0.25, 1.0);
         return;
     }
 
@@ -64,7 +71,9 @@ void main()
         {
             result += calculateLight(emissiveBodies[i], norm, fragPos, viewDir);
         }
-
+        
         FragColor = vec4(result, 1.0);
+        BloomColor = vec4(0.0);
+        return;
     }
 }

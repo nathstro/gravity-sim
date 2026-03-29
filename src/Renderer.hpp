@@ -27,6 +27,7 @@ class Renderer
 		float deltaTime;
 		float elapsedTime;
 		std::vector<Body> system;
+		std::vector<Body*> emissives;
 		std::vector<float> stars;
 
 	public:

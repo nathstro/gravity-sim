@@ -6,7 +6,7 @@
 	* shadows
 	* bloom + other post processing
 * better controls:
-	* arcball camera
+	* FIX CAMERA JUMPING
 	* inertia when moving camera
 * ability to spawn planets
 * ability to save systems

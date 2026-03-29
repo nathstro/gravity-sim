@@ -22,12 +22,13 @@ const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
 const float G = 6.674e-11;
 const float distScale = 1e11;
-const float TIMESTEP = 0.015f;
+const float TIMESTEP = 0.0167f;
 const int STAR_COUNT = 500;
 const float STAR_RADIUS = 50.0f;
 
 float xLast = (float)INIT_WIDTH  / 2.0f;
 float yLast = (float)INIT_HEIGHT / 2.0f;
+bool isRightMouseDown = false;
 bool firstMouse = true;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -42,6 +43,23 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            isRightMouseDown = true;
+            firstMouse = true;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            isRightMouseDown = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+}
+
 void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
 
@@ -53,6 +71,7 @@ void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
         xLast = xPos;
         yLast = yPos;
         firstMouse = false;
+        return;
     }
 
     // get displacement from previous frame
@@ -61,6 +80,7 @@ void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     xLast = xPos;
     yLast = yPos;
 
+    if (!isRightMouseDown) return;
     r->handleCameraMovement(xOffset, yOffset);
 }
 
@@ -128,8 +148,9 @@ int Renderer::init()
     }
 
     // Callbacks
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
     // Creating sphere and objects
@@ -296,11 +317,12 @@ int Renderer::init()
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Initialise bodies
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
+    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
     system.push_back(earth);
 
-    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 8e10f, 1.0f, true);
+    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 8e10f, 1.0f, true);
     system.push_back(sun);
+    emissives.push_back(&system[1]);
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
@@ -339,13 +361,6 @@ void Renderer::drop()
 
 void Renderer::processLighting()
 {
-    // get emissive bodies
-    std::vector<Body> emissives;
-    for (auto& a : system)
-    {
-        if (a.emissive) emissives.push_back(a);
-    }
-
     // set properties
     shader->setInt("emissiveCount", emissives.size());
 
@@ -354,11 +369,11 @@ void Renderer::processLighting()
         for (size_t i = 0; i < emissives.size(); i++)
         {
             std::string index = "emissiveBodies[" + std::to_string(i) + "].";
-            shader->setVec3(index + "position", emissives[i].position);
-            shader->setVec3(index + "colour", emissives[i].colour);
+            shader->setVec3(index + "position", emissives[i]->position);
+            shader->setVec3(index + "colour", emissives[i]->colour);
             shader->setFloat(index + "constant", 1.0f);
-            shader->setFloat(index + "linear", 0.045f);
-            shader->setFloat(index + "quadratic", 0.0075f);
+            shader->setFloat(index + "linear", 0.09f);
+            shader->setFloat(index + "quadratic", 0.032f);
         }
     }
 }
@@ -446,8 +461,6 @@ void Renderer::processRendering()
 
     keyCallback(window, cam, deltaTime);
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // uncomment for wireframe rendering
-
     // first pass
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -485,7 +498,7 @@ void Renderer::processRendering()
         renderBody(b);
     }
 
-    processBloom(10);
+    processBloom(20);
       
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default

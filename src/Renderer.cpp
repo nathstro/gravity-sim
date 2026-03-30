@@ -12,6 +12,7 @@
 #include "imgui_impl_opengl3.h"
 
 #include <cfloat>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -75,6 +76,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         else if (action == GLFW_RELEASE)
         {
             isLeftMouseDown = false;
+            if (!ImGui::GetIO().WantCaptureMouse)
+                r->selectBody();
         }
     }
 }
@@ -336,10 +339,10 @@ int Renderer::init()
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     // Initialise bodies
-    Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
+    Body earth("Earth", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
     system.push_back(earth);
 
-    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 1.0f, true);
+    Body sun("Sun", glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 1.0f, true);
     system.push_back(sun);
     emissives.push_back(&system[1]);
 
@@ -481,25 +484,22 @@ void Renderer::processPhysics()
 void Renderer::renderBody(Body& body)
 {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
-    glm::mat4 outlineModel = glm::scale(model, glm::vec3(body.radius * 1.01));
+    glm::mat4 outlineModel = glm::scale(model, glm::vec3(body.radius * 1.1));
     model = glm::scale(model, glm::vec3(body.radius)); // scales
 
     shader->setVec3("viewPos", cam->getPosition());
+    shader->setBool("emissive", body.emissive);
 
-    if (&body == hoveredBody) {
+    if (&body == selectedBody) {
         glDisable(GL_DEPTH_TEST);
-        shader->setInt("emissiveCount", 0);
         shader->setBool("outline", true);
+        shader->setFloat("time", currentTime);
         shader->setMat4("model", outlineModel);
         glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
         glEnable(GL_DEPTH_TEST);
     }
-    else {
-        shader->setBool("emissive", body.emissive);
-    }
     
     shader->setBool("outline", false);
-    
     shader->setVec3("colour", body.colour);
     shader->setMat4("model", model);
     
@@ -618,19 +618,30 @@ void Renderer::processRendering()
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     //imgui
-    ImGui::Begin("Body");
-    if (hoveredBody != nullptr)
+    if (selectedBody != nullptr)
     {
-        ImGui::Text("Selected position: \nx:%f, \ny:%f, \nz:%f",
-                    hoveredBody->position.x, hoveredBody->position.y, hoveredBody->position.z);
-        ImGui::Text("\nSelected acceleration: \nx:%f, \ny:%f, \nz:%f",
-                    hoveredBody->acceleration.x, hoveredBody->acceleration.y, hoveredBody->acceleration.z);
-        ImGui::Text("\nEmissive: \n%s",
-                    hoveredBody->emissive ? "yes" : "no");
-        ImGui::Text("\nColour: \nr:%f,\ng:%f,\nb:%f",
-                    std::round(hoveredBody->colour.x * 255), std::round(hoveredBody->colour.y * 255), std::round(hoveredBody->colour.z * 255));
+        ImGui::Begin("Selected Body:");
+
+        ImGui::Text("%s", selectedBody->name.c_str());
+
+        ImGui::SeparatorText("Position:");
+        ImGui::Text("x:%f, \ny:%f, \nz:%f\n",
+                    selectedBody->position.x, selectedBody->position.y, selectedBody->position.z);
+        
+        ImGui::SeparatorText("Velocity:");
+        ImGui::Text("%f units/second\n", selectedBody->getVelocity());
+
+        ImGui::SeparatorText("Acceleration:");
+        ImGui::Text("%f units/second squared\n", selectedBody->getAcceleration());
+        
+        ImGui::SeparatorText("Properties:");
+        //ImGui::Text("Emissive:"); to do: moving bodies around systems
+        //ImGui::Checkbox("Emissive", &selectedBody->emissive);
+        ImGui::ColorEdit3("Colour", &selectedBody->colour.x);
+        ImGui::Button("Delete");
+
+        ImGui::End();
     }
-    ImGui::End();
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -647,6 +658,11 @@ GLFWwindow* Renderer::getWindow()
 void Renderer::handleCameraMovement(float xOffset, float yOffset)
 {
     cam->handleMouseMovement(xOffset, yOffset);
+}
+
+void Renderer::selectBody()
+{
+    selectedBody = hoveredBody;
 }
 
 void Renderer::updateWindowSize(int width, int height)

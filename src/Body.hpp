@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <string>
 
 struct Body
 {
@@ -11,6 +12,9 @@ struct Body
 	float mass;
 	float radius;
 	bool emissive;
+	std::string name;
 
-	Body(glm::vec3 position, glm::vec3 velocity, glm::vec3 colour, float mass, float radius, bool emissive);
+	Body(std::string name, glm::vec3 position, glm::vec3 velocity, glm::vec3 colour, float mass, float radius, bool emissive);
+	float getVelocity();
+	float getAcceleration();
 };

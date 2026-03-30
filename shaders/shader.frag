@@ -11,6 +11,7 @@ uniform vec3 viewPos;
 uniform vec3 colour;
 uniform bool emissive;
 uniform bool outline;
+uniform float time;
 
 struct Light
 {
@@ -53,7 +54,8 @@ vec3 calculateLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 void main()
 {
     if (outline) {
-        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        float blend = 0.5 + (sin(5.0 * time) * 0.5);
+        FragColor = vec4(mix(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), blend), 1.0);
         BloomColor = vec4(0.0);
         return;
     }

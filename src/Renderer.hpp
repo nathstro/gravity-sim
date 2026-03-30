@@ -46,6 +46,7 @@ class Renderer
 		void handleCameraMovement(float xOffset, float yOffset);
 		void updateFramebufferSize(int fbWidth, int fbHeight);
 		void updateWindowSize(int width, int height);
+		void selectBody();
 		Body* pickObject(const Camera::Ray& ray);
 		GLFWwindow* getWindow();
 };

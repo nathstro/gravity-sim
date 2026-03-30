@@ -1,16 +1,20 @@
 #include "Renderer.hpp"
 #include "Body.hpp"
 #include "GLFW/glfw3.h"
-#include "glm/detail/qualifier.hpp"
 #include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "models/Sphere.hpp"
 #include "Shader.hpp"
 #include "Camera.hpp"
+
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+#include <cfloat>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include <locale>
 #include <random>
 #include <string>
 
@@ -29,6 +33,7 @@ const float STAR_RADIUS = 50.0f;
 float xLast = (float)INIT_WIDTH  / 2.0f;
 float yLast = (float)INIT_HEIGHT / 2.0f;
 bool isRightMouseDown = false;
+bool isLeftMouseDown = false;
 bool firstMouse = true;
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -44,6 +49,8 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+    Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+
     if (button == GLFW_MOUSE_BUTTON_RIGHT)
     {
         if (action == GLFW_PRESS)
@@ -56,6 +63,18 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         {
             isRightMouseDown = false;
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT)
+    {
+        if (action == GLFW_PRESS)
+        {
+            isLeftMouseDown = true;
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            isLeftMouseDown = false;
         }
     }
 }
@@ -110,7 +129,7 @@ void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
 }
 
 Renderer::Renderer()
-: window(nullptr), width(INIT_WIDTH), height(INIT_HEIGHT), shader(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
+: window(nullptr), width(INIT_WIDTH), height(INIT_HEIGHT), shader(nullptr), starShader(nullptr), postProcessingShader(nullptr), blurShader(nullptr), hoveredBody(nullptr), selectedBody(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
 {}
 
 int Renderer::init()
@@ -320,7 +339,7 @@ int Renderer::init()
     Body earth(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
     system.push_back(earth);
 
-    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 8e10f, 1.0f, true);
+    Body sun(glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 1.0f, true);
     system.push_back(sun);
     emissives.push_back(&system[1]);
 
@@ -339,6 +358,19 @@ int Renderer::init()
 	return 0;
 }
 
+int Renderer::initUI()
+{
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    return 0;
+}
+
 void Renderer::drop()
 {
     glDeleteVertexArrays(1, &sphereVAO);
@@ -352,11 +384,51 @@ void Renderer::drop()
 
     delete shader;
     shader = nullptr;
+    delete starShader;
+    starShader = nullptr;
+    delete postProcessingShader;
+    postProcessingShader = nullptr;
+    delete blurShader;
+    blurShader = nullptr;
     delete cam;
     cam = nullptr;
 
+    ImGui_ImplGlfw_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext();
+
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+Body* Renderer::pickObject(const Camera::Ray& ray)
+{
+    Body* closest = nullptr;
+    float minT = FLT_MAX;
+
+    for (auto& a : system)
+    {
+        glm::vec3 direction = ray.origin - a.position;
+        float b = 2.0f * glm::dot(direction, ray.direction);
+        float c = glm::dot(direction, direction) - (a.radius * a.radius);
+
+        float dsc = b * b - 4 * c;
+        if (dsc < 0) continue;
+
+        float t1 = (-b + sqrt(dsc)) / 2;
+        float t2 = (-b - sqrt(dsc)) / 2;
+        float newMinT;
+
+        if (t1 > 0.001f) newMinT = t1;
+        else if (t2 > 0.001f) newMinT = t2;
+        else continue;
+
+        if (newMinT < minT) {
+            minT = newMinT;
+            closest = &a;
+        }
+    }
+    return closest;
 }
 
 void Renderer::processLighting()
@@ -409,12 +481,27 @@ void Renderer::processPhysics()
 void Renderer::renderBody(Body& body)
 {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), body.position); // transforms
+    glm::mat4 outlineModel = glm::scale(model, glm::vec3(body.radius * 1.01));
     model = glm::scale(model, glm::vec3(body.radius)); // scales
 
-    shader->setVec3("colour", body.colour);
     shader->setVec3("viewPos", cam->getPosition());
+
+    if (&body == hoveredBody) {
+        glDisable(GL_DEPTH_TEST);
+        shader->setInt("emissiveCount", 0);
+        shader->setBool("outline", true);
+        shader->setMat4("model", outlineModel);
+        glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
+        glEnable(GL_DEPTH_TEST);
+    }
+    else {
+        shader->setBool("emissive", body.emissive);
+    }
+    
+    shader->setBool("outline", false);
+    
+    shader->setVec3("colour", body.colour);
     shader->setMat4("model", model);
-    shader->setBool("emissive", body.emissive);
     
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
 }
@@ -464,10 +551,20 @@ void Renderer::processRendering()
     // first pass
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // we're not using the stencil buffer now
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
-    glm::mat4 projection = glm::perspective(glm::radians(FOV), (float)fbWidth / fbHeight, 0.1f, 100.0f);
+    //imgui
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    //hover
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    hoveredBody = pickObject(cam->getRay(mouseX, mouseY, width, height));
+
+    glm::mat4 projection = cam->getProjectionMatrix(fbWidth, fbHeight);
     glm::mat4 view = cam->getViewMatrix();
     glm::mat4 model = glm::mat4(0.0f);
 
@@ -498,7 +595,7 @@ void Renderer::processRendering()
         renderBody(b);
     }
 
-    processBloom(20);
+    processBloom(10);
       
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -518,7 +615,25 @@ void Renderer::processRendering()
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, pingpongTexture[1]);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6); 
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    //imgui
+    ImGui::Begin("Body");
+    if (hoveredBody != nullptr)
+    {
+        ImGui::Text("Selected position: \nx:%f, \ny:%f, \nz:%f",
+                    hoveredBody->position.x, hoveredBody->position.y, hoveredBody->position.z);
+        ImGui::Text("\nSelected acceleration: \nx:%f, \ny:%f, \nz:%f",
+                    hoveredBody->acceleration.x, hoveredBody->acceleration.y, hoveredBody->acceleration.z);
+        ImGui::Text("\nEmissive: \n%s",
+                    hoveredBody->emissive ? "yes" : "no");
+        ImGui::Text("\nColour: \nr:%f,\ng:%f,\nb:%f",
+                    std::round(hoveredBody->colour.x * 255), std::round(hoveredBody->colour.y * 255), std::round(hoveredBody->colour.z * 255));
+    }
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     glfwPollEvents();
     glfwSwapBuffers(window);

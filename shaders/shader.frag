@@ -10,6 +10,7 @@ uniform sampler2D tex;
 uniform vec3 viewPos;
 uniform vec3 colour;
 uniform bool emissive;
+uniform bool outline;
 
 struct Light
 {
@@ -51,7 +52,13 @@ vec3 calculateLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 
 void main()
 {
-    if (emissive) {
+    if (outline) {
+        FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+        BloomColor = vec4(0.0);
+        return;
+    }
+
+    else if (emissive) {
         FragColor = vec4(colour, 1.0);
         BloomColor = vec4(colour * 3.0, 1.0);
         return;
@@ -59,6 +66,7 @@ void main()
 
     else if (emissiveCount == 0) {
         FragColor = vec4(colour * 0.25, 1.0);
+        BloomColor = vec4(0.0);
         return;
     }
 

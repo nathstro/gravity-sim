@@ -1,8 +1,10 @@
 #include "Camera.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/geometric.hpp"
+#include "glm/matrix.hpp"
 
 Camera::Camera(glm::vec3 cameraPos)
-: cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
+: cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), FOV(55.0f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
 {
 	updateCameraVectors();
 }
@@ -54,6 +56,11 @@ glm::mat4 Camera::getViewMatrix() const
 	return glm::lookAt(cameraPos, cameraPos + cameraFront, WORLD_UP);
 }
 
+glm::mat4 Camera::getProjectionMatrix(int fbWidth, int fbHeight) const
+{
+	return glm::perspective(glm::radians(FOV), (float)fbWidth / fbHeight, 0.1f, 100.0f);
+}
+
 glm::vec3 Camera::getPosition() const
 {
 	return cameraPos;
@@ -70,5 +77,27 @@ void Camera::updateCameraVectors()
     cameraRight = glm::normalize(glm::cross(cameraFront, WORLD_UP));
     cameraUp = glm::normalize(glm::cross(cameraFront, cameraRight));
 }
+
+Camera::Ray Camera::getRay(float mouseX, float mouseY, int width, int height) const
+{
+	Ray r;
+	r.origin = getPosition();
+
+	// convert to ndc
+	float xPos = (2.0f * mouseX) / width - 1.0f;
+	float yPos = 1.0f - (2.0f * mouseY) / height;
+
+	glm::vec4 rayClip(xPos, yPos, -1.0f, 1.0f);
+
+	glm::vec4 rayEye = glm::inverse(getProjectionMatrix(width, height)) * rayClip;
+	rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+
+	glm::vec3 rayWorld(glm::inverse(getViewMatrix()) * rayEye);
+	
+	r.direction = glm::normalize(rayWorld);
+	return r;
+}
+
+
 
 

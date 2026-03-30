@@ -22,6 +22,8 @@ class Renderer
 		unsigned int pingpongFBO[2], pingpongTexture[2];
 		Shader *shader, *starShader, *postProcessingShader, *blurShader;
 		Camera* cam;
+		Body* hoveredBody;
+		Body* selectedBody;
 		float currentTime;
 		float oldTime;
 		float deltaTime;
@@ -33,6 +35,7 @@ class Renderer
 	public:
 		Renderer();
 		int init();
+		int initUI();
 		void drop();
 		void processPhysics();
 		void renderBody(Body& body);
@@ -43,5 +46,6 @@ class Renderer
 		void handleCameraMovement(float xOffset, float yOffset);
 		void updateFramebufferSize(int fbWidth, int fbHeight);
 		void updateWindowSize(int width, int height);
+		Body* pickObject(const Camera::Ray& ray);
 		GLFWwindow* getWindow();
 };

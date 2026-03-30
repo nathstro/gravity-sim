@@ -10,6 +10,11 @@ int main()
 		return -1;
 	}
 
+	if (renderer.initUI())
+	{
+		return -1;
+	}
+
 	GLFWwindow* window = renderer.getWindow();
 
 	while (!glfwWindowShouldClose(window))

@@ -4,7 +4,7 @@
 * lighting:
 	* ~~emissive and regular bodies~~
 	* shadows
-	* bloom + other post processing
+	* ~~bloom + other post processing~~
 * better controls:
 	* FIX CAMERA JUMPING
 	* inertia when moving camera

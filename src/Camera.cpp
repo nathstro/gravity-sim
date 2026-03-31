@@ -4,7 +4,7 @@
 #include "glm/matrix.hpp"
 
 Camera::Camera(glm::vec3 cameraPos)
-: cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), FOV(55.0f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
+: cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), fov(55.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
 {
 	updateCameraVectors();
 }
@@ -51,6 +51,15 @@ void Camera::handleMouseMovement(float xOffset, float yOffset)
     updateCameraVectors();
 }
 
+void Camera::handleScroll(float yOffset)
+{
+	fov -= yOffset;
+	if (fov < 1.0f)
+        fov = 1.0f;
+    if (fov > 45.0f)
+        fov = 45.0f;
+}
+
 glm::mat4 Camera::getViewMatrix() const
 {
 	return glm::lookAt(cameraPos, cameraPos + cameraFront, WORLD_UP);
@@ -58,7 +67,7 @@ glm::mat4 Camera::getViewMatrix() const
 
 glm::mat4 Camera::getProjectionMatrix(int fbWidth, int fbHeight) const
 {
-	return glm::perspective(glm::radians(FOV), (float)fbWidth / fbHeight, 0.1f, 100.0f);
+	return glm::perspective(glm::radians(fov), (float)fbWidth / fbHeight, 0.1f, 100.0f);
 }
 
 glm::vec3 Camera::getPosition() const

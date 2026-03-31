@@ -24,6 +24,7 @@ class Camera
 		Camera(glm::vec3 initialCameraPos);
 		void handleKeyboard(CameraMove direction, float deltaTime);
 		void handleMouseMovement(float xOffset, float yOffset);
+		void handleScroll(float yOffset);
 		glm::mat4 getProjectionMatrix(int fbWidth, int fbHeight) const;
 		glm::mat4 getViewMatrix() const;
 		glm::vec3 getPosition() const;
@@ -32,7 +33,6 @@ class Camera
 	private:
 		const float CAM_SPEED;
 		const float SENSITIVITY;
-		const float FOV;
 		const glm::vec3 WORLD_UP;
 
 		glm::vec3 cameraPos;
@@ -41,6 +41,7 @@ class Camera
 		glm::vec3 cameraRight;
 		float yaw;
 		float pitch;
+		float fov;
 
 		void updateCameraVectors();
 };

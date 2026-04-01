@@ -1,4 +1,5 @@
 *.sublime-project
+*.sublime-workspace
 *.DS_Store
 
 *.slo
@@ -20,3 +21,5 @@ cmake_install.cmake
 Makefile
 install_manifest.txt 
 compile_commands.json
+
+imgui.ini

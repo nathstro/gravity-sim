@@ -12,6 +12,7 @@ add_executable(gravitySim
     src/Camera.cpp
     src/Shader.cpp
     src/glad.c
+    src/miniaudio.cpp
     src/models/Sphere.cpp
 )
 
@@ -23,6 +24,7 @@ add_library(imgui
     imgui/imgui_impl_opengl3.cpp
     imgui/imgui_tables.cpp
     imgui/imgui_widgets.cpp
+    imgui/imgui_stdlib.cpp
 )
 
 target_include_directories(gravitySim PRIVATE include)

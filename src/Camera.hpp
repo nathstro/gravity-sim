@@ -29,6 +29,9 @@ class Camera
 		glm::mat4 getViewMatrix() const;
 		glm::vec3 getPosition() const;
 		Ray getRay(float mouseX, float mouseY, int width, int height) const;
+		float getYaw() const;
+		float getPitch() const;
+		float getFOV() const;
 		
 	private:
 		const float CAM_SPEED;

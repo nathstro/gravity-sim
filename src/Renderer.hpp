@@ -32,6 +32,9 @@ class Renderer
 		std::vector<Body*> emissives;
 		std::vector<float> stars;
 
+		std::optional<Body> editingBody;
+		bool positionConfirmed;
+
 	public:
 		Renderer();
 		int init();
@@ -39,14 +42,24 @@ class Renderer
 		void drop();
 		void processPhysics();
 		void renderBody(Body& body);
+		void renderEditingBody();
 		void renderStars();
 		void processLighting();
 		void processRendering();
+		void renderNormal();
+		void renderEditing();
 		void processBloom(int passes);
 		void handleCameraMovement(float xOffset, float yOffset);
+		void handleCameraZoom(float yOffset);
 		void updateFramebufferSize(int fbWidth, int fbHeight);
 		void updateWindowSize(int width, int height);
 		void selectBody();
+		void togglePositionConfirm();
 		Body* pickObject(const Camera::Ray& ray);
 		GLFWwindow* getWindow();
+
+		enum state {
+			NORMAL, EDITING
+		};
+		state currentState;
 };

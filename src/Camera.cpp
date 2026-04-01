@@ -56,8 +56,8 @@ void Camera::handleScroll(float yOffset)
 	fov -= yOffset;
 	if (fov < 1.0f)
         fov = 1.0f;
-    if (fov > 45.0f)
-        fov = 45.0f;
+    if (fov > 90.0f)
+        fov = 90.0f;
 }
 
 glm::mat4 Camera::getViewMatrix() const
@@ -73,6 +73,21 @@ glm::mat4 Camera::getProjectionMatrix(int fbWidth, int fbHeight) const
 glm::vec3 Camera::getPosition() const
 {
 	return cameraPos;
+}
+
+float Camera::getYaw() const
+{
+	return yaw;
+}
+
+float Camera::getPitch() const
+{
+	return pitch;
+}
+
+float Camera::getFOV() const
+{
+	return fov;
 }
 
 void Camera::updateCameraVectors()

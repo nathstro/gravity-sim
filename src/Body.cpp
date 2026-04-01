@@ -1,5 +1,10 @@
 #include "Body.hpp"
+#include <random>
 #include <string>
+
+std::random_device rd;
+std::mt19937 rng(rd());
+std::normal_distribution<float> dist(0.75, 0.2);
 
 Body::Body(std::string name, glm::vec3 position, glm::vec3 velocity, glm::vec3 colour, float mass, float radius, bool emissive)
 : 	name(name),
@@ -11,6 +16,11 @@ Body::Body(std::string name, glm::vec3 position, glm::vec3 velocity, glm::vec3 c
 	radius(radius),
 	emissive(emissive) 
 {}
+
+void Body::recalcVelocity(glm::vec3 velocity)
+{
+	previousPosition = position - (velocity * 0.016f);
+}
 
 float Body::getVelocity()
 {

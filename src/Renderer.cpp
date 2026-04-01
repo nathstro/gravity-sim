@@ -8,6 +8,7 @@
 #include "Camera.hpp"
 
 #include "imgui.h"
+#include "imgui_stdlib.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
@@ -20,16 +21,18 @@
 #include <string>
 
 // constants
-const int INIT_WIDTH = 800;
-const int INIT_HEIGHT = 600;
-const float FOV = 55.0f;
+const int INIT_WIDTH = 1470; // initial width of window
+const int INIT_HEIGHT = 956; // initial height of window
 const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
-const float G = 6.674e-11;
-const float distScale = 1e11;
-const float TIMESTEP = 0.0167f;
-const int STAR_COUNT = 500;
-const float STAR_RADIUS = 50.0f;
+const float G = 6.674e-11; // gravitational constant
+const float distScale = 1e11; 
+
+const int STAR_COUNT = 500; // number of stars
+const float STAR_RADIUS = 50.0f; // radius of star dome
+const float DT = 0.0167f;
+int timeScale = 1;
+float timeStep = DT * timeScale;
 
 float xLast = (float)INIT_WIDTH  / 2.0f;
 float yLast = (float)INIT_HEIGHT / 2.0f;
@@ -77,7 +80,18 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
         {
             isLeftMouseDown = false;
             if (!ImGui::GetIO().WantCaptureMouse)
-                r->selectBody();
+            {
+                switch (r->currentState)
+                {   
+                    case Renderer::EDITING:
+                        r->togglePositionConfirm();
+                        break;
+                
+                    case Renderer::NORMAL:
+                        r->selectBody();
+                        break;
+                }
+            }
         }
     }
 }
@@ -106,6 +120,13 @@ void mouseCallback(GLFWwindow* window, double xPos, double yPos) {
     r->handleCameraMovement(xOffset, yOffset);
 }
 
+void scrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+{
+    Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+    yOffset = static_cast<float>(yOffset);
+    r->handleCameraZoom(yOffset);
+}
+
 void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -132,7 +153,22 @@ void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
 }
 
 Renderer::Renderer()
-: window(nullptr), width(INIT_WIDTH), height(INIT_HEIGHT), shader(nullptr), starShader(nullptr), postProcessingShader(nullptr), blurShader(nullptr), hoveredBody(nullptr), selectedBody(nullptr), cam(nullptr), baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS), currentTime(0.0f), oldTime(0.0f), deltaTime(0.0f), elapsedTime(0.0f)
+:   window(nullptr),
+    width(INIT_WIDTH),
+    height(INIT_HEIGHT),
+    shader(nullptr),
+    starShader(nullptr),
+    postProcessingShader(nullptr),
+    blurShader(nullptr),
+    hoveredBody(nullptr),
+    selectedBody(nullptr),
+    cam(nullptr),
+    baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS),
+    currentTime(0.0f),
+    oldTime(0.0f),
+    deltaTime(0.0f),
+    elapsedTime(0.0f),
+    currentState(NORMAL)
 {}
 
 int Renderer::init()
@@ -174,6 +210,7 @@ int Renderer::init()
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    glfwSetScrollCallback(window, scrollCallback);
 
     // Creating sphere and objects
     baseSphere = Sphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS);
@@ -338,13 +375,60 @@ int Renderer::init()
     starShader = new Shader("shaders/starShader.vert", "shaders/starShader.frag");
     glEnable(GL_PROGRAM_POINT_SIZE);
 
-    // Initialise bodies
+    // Initialise bodies 
+    /*
     Body earth("Earth", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
     system.push_back(earth);
 
     Body sun("Sun", glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 1.0f, true);
     system.push_back(sun);
     emissives.push_back(&system[1]);
+    */
+
+    Body blue(
+        "Aecicon",
+        glm::vec3(-2.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        10e10f,
+        0.5f,
+        false
+    );
+    system.push_back(blue);
+
+    Body green(
+        "Dravent", 
+        glm::vec3(2.0f, 0.0f, 0.0f), 
+        glm::vec3(0.0f, 0.0f, 1.0f), 
+        glm::vec3(0.0f, 1.0f, 0.0f), 
+        10e10f, 
+        0.5f, 
+        false
+    );
+    system.push_back(green);
+
+    Body red(
+        "Taarmin", 
+        glm::vec3(0.0f, 0.0f, 3.46f), 
+        glm::vec3(1.0f, 0.0f, 0.0f), 
+        glm::vec3(1.0f, 0.0f, 0.0f), 
+        10e10f, 
+        0.5f, 
+        false
+    );
+    system.push_back(red);
+
+    Body white(
+        "Reiclam", 
+        glm::vec3(0.0f, 0.0f, -3.46f), 
+        glm::vec3(-1.0f, 0.0f, 0.0f), 
+        glm::vec3(1.0f, 1.0f, 1.0f), 
+        10e10f, 
+        0.5f, 
+        false
+    );
+    system.push_back(white);
+    //emissives.push_back(&system[3]);
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
@@ -434,6 +518,19 @@ Body* Renderer::pickObject(const Camera::Ray& ray)
     return closest;
 }
 
+glm::vec3 pickPointOnPlane(const Camera::Ray& ray)
+{
+    glm::vec3 point(0.0f);
+
+    if (ray.direction.y < 0.0f)
+    {
+        float t = (-ray.origin.y) / ray.direction.y;
+        point = ray.origin + t * ray.direction;
+    }
+
+    return point;
+}
+
 void Renderer::processLighting()
 {
     // set properties
@@ -476,7 +573,7 @@ void Renderer::processPhysics()
     for (auto&a : system)
     {
         glm::vec3 temp = a.position;
-        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * TIMESTEP * TIMESTEP);
+        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * timeStep * timeStep);
         a.previousPosition = temp;
     }
 }
@@ -504,6 +601,24 @@ void Renderer::renderBody(Body& body)
     shader->setMat4("model", model);
     
     glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
+}
+
+void Renderer::renderEditingBody()
+{
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), editingBody->position); // transforms
+    model = glm::scale(model, glm::vec3(editingBody->radius)); // scales
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    shader->setVec3("viewPos", cam->getPosition());
+    shader->setBool("emissive", false);
+    shader->setBool("outline", false);
+    shader->setVec3("colour", editingBody->colour);
+    shader->setMat4("model", model);
+
+    glDrawElements(GL_TRIANGLES, baseSphere.getIndices().size(), GL_UNSIGNED_INT, (void*)0);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Renderer::renderStars()
@@ -541,11 +656,15 @@ void Renderer::processBloom(int passes)
 
 void Renderer::processRendering()
 {// the game loop
+    timeStep = DT * timeScale;
     currentTime = glfwGetTime();
     deltaTime = currentTime - oldTime;
+    if (deltaTime > 0.25)
+            deltaTime = 0.25;
     oldTime = currentTime;
-    elapsedTime += deltaTime;
+    elapsedTime += deltaTime * timeScale;
 
+    
     keyCallback(window, cam, deltaTime);
 
     // first pass
@@ -559,43 +678,15 @@ void Renderer::processRendering()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    //hover
-    double mouseX, mouseY;
-    glfwGetCursorPos(window, &mouseX, &mouseY);
-    hoveredBody = pickObject(cam->getRay(mouseX, mouseY, width, height));
-
-    glm::mat4 projection = cam->getProjectionMatrix(fbWidth, fbHeight);
-    glm::mat4 view = cam->getViewMatrix();
-    glm::mat4 model = glm::mat4(0.0f);
-
-    starShader->use();
-    starShader->setFloat("time", currentTime);
-    starShader->setMat4("projection", projection);
-    starShader->setMat4("view", glm::mat4(glm::mat3(view)));
-    renderStars();
-
-    shader->use();
-    
-    shader->setInt("tex", 0);
-    shader->setMat4("projection", projection);
-    shader->setMat4("view", view);
-
-    glBindVertexArray(sphereVAO);
-
-    while (elapsedTime >= TIMESTEP)
+    switch (currentState)
     {
-        processPhysics();
-        elapsedTime -= TIMESTEP;
+        case NORMAL:
+            renderNormal();
+            break;
+        case EDITING:
+            renderEditing();
+            break;
     }
-    
-    processLighting();
-
-    for (auto& b : system)
-    {
-        renderBody(b);
-    }
-
-    processBloom(10);
       
     // second pass
     glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default
@@ -617,7 +708,96 @@ void Renderer::processRendering()
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-    //imgui
+    // BOTH
+
+    //imgui // NORMAL
+    ImGui::Begin("Tools");
+    if (ImGui::Button("Spawn new body"))
+    {
+        timeScale = 0.0f;
+        currentState = EDITING;
+    }
+    ImGui::End();
+
+    ImGui::Begin("User");
+    glm::vec3 camPos = cam->getPosition();
+    ImGui::SeparatorText("Position:");
+    ImGui::Text("x:%.3f, \ny:%.3f, \nz:%.3f\n",
+                camPos.x, camPos.y, camPos.z);
+
+    ImGui::SeparatorText("Direction:");
+    ImGui::Text("x:%.1f degrees, \ny:%.1f degrees",
+                cam->getYaw(), cam->getPitch());
+
+    ImGui::SeparatorText("Zoom:");
+    ImGui::Text("FOV:%.0f",
+                cam->getFOV());
+    
+    if (hoveredBody != nullptr)
+    {
+        ImGui::SeparatorText("Hovered Body:");
+        ImGui::Text("%s", hoveredBody->name.c_str());
+    }
+    if (selectedBody != nullptr)
+    {
+        ImGui::SeparatorText("Selected Body:");
+        ImGui::Text("%s", selectedBody->name.c_str());
+    }
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwPollEvents();
+    glfwSwapBuffers(window);
+}
+
+void Renderer::renderNormal()
+{
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+    hoveredBody = pickObject(cam->getRay(mouseX, mouseY, width, height));
+
+    // BOTH
+    glm::mat4 projection = cam->getProjectionMatrix(fbWidth, fbHeight);
+    glm::mat4 view = cam->getViewMatrix();
+    glm::mat4 model = glm::mat4(0.0f);
+
+    // BOTH (do this before hover)
+    starShader->use();
+    starShader->setFloat("time", currentTime);
+    starShader->setMat4("projection", projection);
+    starShader->setMat4("view", glm::mat4(glm::mat3(view)));
+    renderStars();
+
+    // BOTH
+    shader->use();
+    
+    shader->setInt("tex", 0);
+    shader->setMat4("projection", projection);
+    shader->setMat4("view", view);
+
+    glBindVertexArray(sphereVAO);
+
+    if (timeScale > 0.0f)
+    {
+        while (elapsedTime >= timeStep)
+        {
+            processPhysics();
+            elapsedTime -= timeStep;
+        }
+    }
+    
+    processLighting();
+
+    for (auto& b : system)
+    {
+        renderBody(b);
+    }
+
+    processBloom(10);
+
     if (selectedBody != nullptr)
     {
         ImGui::Begin("Selected Body:");
@@ -625,29 +805,132 @@ void Renderer::processRendering()
         ImGui::Text("%s", selectedBody->name.c_str());
 
         ImGui::SeparatorText("Position:");
-        ImGui::Text("x:%f, \ny:%f, \nz:%f\n",
+        ImGui::Text("x:%.3f, \ny:%.3f, \nz:%.3f\n",
                     selectedBody->position.x, selectedBody->position.y, selectedBody->position.z);
         
         ImGui::SeparatorText("Velocity:");
-        ImGui::Text("%f units/second\n", selectedBody->getVelocity());
+        ImGui::Text("%.3f units/second\n", selectedBody->getVelocity());
 
         ImGui::SeparatorText("Acceleration:");
-        ImGui::Text("%f units/second squared\n", selectedBody->getAcceleration());
+        ImGui::Text("%.3f units/second squared\n", selectedBody->getAcceleration());
         
         ImGui::SeparatorText("Properties:");
         //ImGui::Text("Emissive:"); to do: moving bodies around systems
         //ImGui::Checkbox("Emissive", &selectedBody->emissive);
         ImGui::ColorEdit3("Colour", &selectedBody->colour.x);
+        ImGui::InputFloat("Mass", &selectedBody->mass);
+        ImGui::InputFloat("Radius", &selectedBody->radius);
         ImGui::Button("Delete");
 
         ImGui::End();
     }
+}
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+void Renderer::renderEditing()
+{
+    if (!editingBody)
+    {
+        hoveredBody = nullptr;
+        selectedBody = nullptr;
+        positionConfirmed = false;
+        
+        editingBody.emplace(
+            "New Body",
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(1.0f, 1.0f, 1.0f),
+            100.0f,
+            1.0f,
+            false
+        );
+    }
 
-    glfwPollEvents();
-    glfwSwapBuffers(window);
+    if (!positionConfirmed)
+    {
+        double mouseX, mouseY;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+        editingBody->position = pickPointOnPlane(cam->getRay(mouseX, mouseY, width, height));
+    }
+
+    // BOTH
+    glm::mat4 projection = cam->getProjectionMatrix(fbWidth, fbHeight);
+    glm::mat4 view = cam->getViewMatrix();
+    glm::mat4 model = glm::mat4(0.0f);
+
+    // BOTH
+    starShader->use();
+    starShader->setFloat("time", currentTime);
+    starShader->setMat4("projection", projection);
+    starShader->setMat4("view", glm::mat4(glm::mat3(view)));
+    renderStars();
+
+    // BOTH
+    shader->use();
+    
+    shader->setInt("tex", 0);
+    shader->setMat4("projection", projection);
+    shader->setMat4("view", view);
+
+    glBindVertexArray(sphereVAO);
+
+    if (timeScale > 0.0f)
+    {
+        while (elapsedTime >= timeStep)
+        {
+            processPhysics();
+            elapsedTime -= timeStep;
+        }
+    }
+    
+    processLighting();
+
+    // Render wireframe
+    renderEditingBody();
+
+    // Render all other bodies
+    for (auto& b : system)
+    {
+        renderBody(b);
+    }
+
+    processBloom(10);
+
+    ImGui::Begin("New Body");
+    ImGui::SeparatorText("Position:");
+    ImGui::Text("x:%.3f, \ny:%.3f, \nz:%.3f\n",
+                 editingBody->position.x, editingBody->position.y, editingBody->position.z);
+
+    ImGui::SeparatorText("Velocity:");
+    ImGui::Text("%.3f units/second\n", editingBody->getVelocity());
+
+    ImGui::SeparatorText("Properties:");
+    ImGui::InputText("Name", &editingBody->name);
+    ImGui::ColorEdit3("Colour", &editingBody->colour.x);
+    ImGui::InputFloat("Mass", &editingBody->mass);
+    ImGui::InputFloat("Radius", &editingBody->radius);
+
+    if (positionConfirmed)
+    {
+        if (ImGui::Button("Create"))
+        {
+            if (positionConfirmed)
+            {
+                editingBody->recalcVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+                system.push_back(*editingBody);
+                editingBody.reset();
+                timeScale = 1.0f;
+                currentState = NORMAL;
+            }
+        } // works only if position is confirmed
+    }
+
+    if (ImGui::Button("Cancel"))
+    {
+        editingBody.reset();
+        timeScale = 1.0f;
+        currentState = NORMAL;
+    } // set state to normal, delete pointer
+    ImGui::End();
 }
 
 GLFWwindow* Renderer::getWindow()
@@ -660,9 +943,19 @@ void Renderer::handleCameraMovement(float xOffset, float yOffset)
     cam->handleMouseMovement(xOffset, yOffset);
 }
 
+void Renderer::handleCameraZoom(float yOffset)
+{
+    cam->handleScroll(yOffset);
+}
+
 void Renderer::selectBody()
 {
     selectedBody = hoveredBody;
+}
+
+void Renderer::togglePositionConfirm()
+{
+    positionConfirmed = !positionConfirmed;
 }
 
 void Renderer::updateWindowSize(int width, int height)

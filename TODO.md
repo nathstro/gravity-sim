@@ -9,6 +9,6 @@
 	* FIX CAMERA JUMPING
 	* inertia when moving camera
 * ability to resize window
-* time scaling (pause time, slo-mo, fast-forward)
-* ability to spawn planets
+* time scaling (~~pause time~~, slo-mo, fast-forward)
+* ~~ability to spawn planets~~
 * ability to save systems

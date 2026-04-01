@@ -4,6 +4,7 @@
 
 struct Body
 {
+	unsigned int ID;
 	glm::vec3 previousPosition;
 	glm::vec3 position;
 	glm::vec3 acceleration;

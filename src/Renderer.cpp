@@ -12,11 +12,13 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include <algorithm>
 #include <cfloat>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <string>
 
@@ -124,7 +126,9 @@ void scrollCallback(GLFWwindow* window, double xOffset, double yOffset)
 {
     Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
     yOffset = static_cast<float>(yOffset);
-    r->handleCameraZoom(yOffset);
+
+    if (!ImGui::GetIO().WantCaptureMouse)
+        r->handleCameraZoom(yOffset);
 }
 
 void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
@@ -132,23 +136,27 @@ void keyCallback(GLFWwindow* window, Camera* cam, float deltaTime)
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::FORWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::LEFT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::BACKWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::RIGHT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::UP, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-        cam->handleKeyboard(CameraMove::DOWN, deltaTime);
+
+    if (!ImGui::GetIO().WantCaptureKeyboard)
+    {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::FORWARD, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::LEFT, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::BACKWARD, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::RIGHT, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::UP, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            cam->handleKeyboard(CameraMove::DOWN, deltaTime);
+        }
     }
 }
 
@@ -160,8 +168,9 @@ Renderer::Renderer()
     starShader(nullptr),
     postProcessingShader(nullptr),
     blurShader(nullptr),
-    hoveredBody(nullptr),
-    selectedBody(nullptr),
+    hoveredBody(0),
+    selectedBody(0),
+    nextID(1),
     cam(nullptr),
     baseSphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS),
     currentTime(0.0f),
@@ -385,7 +394,7 @@ int Renderer::init()
     emissives.push_back(&system[1]);
     */
 
-    Body blue(
+    auto blue = std::make_unique<Body>(
         "Aecicon",
         glm::vec3(-2.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
@@ -394,9 +403,9 @@ int Renderer::init()
         0.5f,
         false
     );
-    system.push_back(blue);
+    addBody(std::move(blue));
 
-    Body green(
+    auto green = std::make_unique<Body>(
         "Dravent", 
         glm::vec3(2.0f, 0.0f, 0.0f), 
         glm::vec3(0.0f, 0.0f, 1.0f), 
@@ -405,9 +414,9 @@ int Renderer::init()
         0.5f, 
         false
     );
-    system.push_back(green);
+    addBody(std::move(green));
 
-    Body red(
+    auto red = std::make_unique<Body>(
         "Taarmin", 
         glm::vec3(0.0f, 0.0f, 3.46f), 
         glm::vec3(1.0f, 0.0f, 0.0f), 
@@ -416,9 +425,9 @@ int Renderer::init()
         0.5f, 
         false
     );
-    system.push_back(red);
+    addBody(std::move(red));
 
-    Body white(
+    auto white = std::make_unique<Body>(
         "Reiclam", 
         glm::vec3(0.0f, 0.0f, -3.46f), 
         glm::vec3(-1.0f, 0.0f, 0.0f), 
@@ -427,8 +436,7 @@ int Renderer::init()
         0.5f, 
         false
     );
-    system.push_back(white);
-    //emissives.push_back(&system[3]);
+    addBody(std::move(white));
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
@@ -488,22 +496,22 @@ void Renderer::drop()
     glfwTerminate();
 }
 
-Body* Renderer::pickObject(const Camera::Ray& ray)
+unsigned int Renderer::pickObject(const Camera::Ray& ray)
 {
     Body* closest = nullptr;
     float minT = FLT_MAX;
 
     for (auto& a : system)
     {
-        glm::vec3 direction = ray.origin - a.position;
+        glm::vec3 direction = ray.origin - a->position;
         float b = 2.0f * glm::dot(direction, ray.direction);
-        float c = glm::dot(direction, direction) - (a.radius * a.radius);
+        float c = glm::dot(direction, direction) - (a->radius * a->radius);
 
         float dsc = b * b - 4 * c;
         if (dsc < 0) continue;
 
-        float t1 = (-b + sqrt(dsc)) / 2;
-        float t2 = (-b - sqrt(dsc)) / 2;
+        float t1 = (-b - sqrt(dsc)) / 2;
+        float t2 = (-b + sqrt(dsc)) / 2;
         float newMinT;
 
         if (t1 > 0.001f) newMinT = t1;
@@ -512,10 +520,14 @@ Body* Renderer::pickObject(const Camera::Ray& ray)
 
         if (newMinT < minT) {
             minT = newMinT;
-            closest = &a;
+            closest = a.get();
         }
     }
-    return closest;
+
+    if (closest)
+        return closest->ID;
+    else
+        return 0;
 }
 
 glm::vec3 pickPointOnPlane(const Camera::Ray& ray)
@@ -540,9 +552,10 @@ void Renderer::processLighting()
     {
         for (size_t i = 0; i < emissives.size(); i++)
         {
+            Body* b = getBody(emissives[i]);
             std::string index = "emissiveBodies[" + std::to_string(i) + "].";
-            shader->setVec3(index + "position", emissives[i]->position);
-            shader->setVec3(index + "colour", emissives[i]->colour);
+            shader->setVec3(index + "position", b->position);
+            shader->setVec3(index + "colour", b->colour);
             shader->setFloat(index + "constant", 1.0f);
             shader->setFloat(index + "linear", 0.09f);
             shader->setFloat(index + "quadratic", 0.032f);
@@ -560,21 +573,21 @@ void Renderer::processPhysics()
         {
             if (&a == &b) continue;
 
-            glm::vec3 direction = b.position - a.position;
+            glm::vec3 direction = b->position - a->position;
             float distance = glm::length(direction) + 0.001f;
-            float magnitudeAcceleration = (G * b.mass) / (distance * distance);
+            float magnitudeAcceleration = (G * b->mass) / (distance * distance);
 
             acceleration += magnitudeAcceleration * glm::normalize(direction);
         }
 
-        a.acceleration = acceleration;
+        a->acceleration = acceleration;
     }
 
     for (auto&a : system)
     {
-        glm::vec3 temp = a.position;
-        a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * timeStep * timeStep);
-        a.previousPosition = temp;
+        glm::vec3 temp = a->position;
+        a->position = (2.0f * a->position) - (a->previousPosition) + (a->acceleration * timeStep * timeStep);
+        a->previousPosition = temp;
     }
 }
 
@@ -587,7 +600,7 @@ void Renderer::renderBody(Body& body)
     shader->setVec3("viewPos", cam->getPosition());
     shader->setBool("emissive", body.emissive);
 
-    if (&body == selectedBody) {
+    if (body.ID == selectedBody) {
         glDisable(GL_DEPTH_TEST);
         shader->setBool("outline", true);
         shader->setFloat("time", currentTime);
@@ -733,15 +746,15 @@ void Renderer::processRendering()
     ImGui::Text("FOV:%.0f",
                 cam->getFOV());
     
-    if (hoveredBody != nullptr)
+    if (hoveredBody != 0)
     {
         ImGui::SeparatorText("Hovered Body:");
-        ImGui::Text("%s", hoveredBody->name.c_str());
+        ImGui::Text("%s", getBody(hoveredBody)->name.c_str());
     }
-    if (selectedBody != nullptr)
+    if (selectedBody != 0)
     {
         ImGui::SeparatorText("Selected Body:");
-        ImGui::Text("%s", selectedBody->name.c_str());
+        ImGui::Text("%s", getBody(selectedBody)->name.c_str());
     }
 
     ImGui::End();
@@ -793,34 +806,40 @@ void Renderer::renderNormal()
 
     for (auto& b : system)
     {
-        renderBody(b);
+        renderBody(*b);
     }
 
     processBloom(10);
 
-    if (selectedBody != nullptr)
+    if (selectedBody != 0)
     {
+        Body* selected = getBody(selectedBody);
         ImGui::Begin("Selected Body:");
 
-        ImGui::Text("%s", selectedBody->name.c_str());
+        ImGui::Text("%s", selected->name.c_str());
 
         ImGui::SeparatorText("Position:");
         ImGui::Text("x:%.3f, \ny:%.3f, \nz:%.3f\n",
-                    selectedBody->position.x, selectedBody->position.y, selectedBody->position.z);
+                    selected->position.x, selected->position.y, selected->position.z);
         
         ImGui::SeparatorText("Velocity:");
-        ImGui::Text("%.3f units/second\n", selectedBody->getVelocity());
+        ImGui::Text("%.3f units/second\n", selected->getVelocity());
 
         ImGui::SeparatorText("Acceleration:");
-        ImGui::Text("%.3f units/second squared\n", selectedBody->getAcceleration());
+        ImGui::Text("%.3f units/second squared\n", selected->getAcceleration());
         
         ImGui::SeparatorText("Properties:");
         //ImGui::Text("Emissive:"); to do: moving bodies around systems
         //ImGui::Checkbox("Emissive", &selectedBody->emissive);
-        ImGui::ColorEdit3("Colour", &selectedBody->colour.x);
-        ImGui::InputFloat("Mass", &selectedBody->mass);
-        ImGui::InputFloat("Radius", &selectedBody->radius);
-        ImGui::Button("Delete");
+        ImGui::ColorEdit3("Colour", &selected->colour.x);
+        ImGui::InputFloat("Mass", &selected->mass);
+        ImGui::InputFloat("Radius", &selected->radius);
+        ImGui::Text("Emissive: %s", selected->emissive ? "yes" : "no");
+        ImGui::Text("ID: %u", selected->ID);
+        if (ImGui::Button("Delete"))
+        {
+            removeBody(selectedBody);
+        }
 
         ImGui::End();
     }
@@ -830,8 +849,8 @@ void Renderer::renderEditing()
 {
     if (!editingBody)
     {
-        hoveredBody = nullptr;
-        selectedBody = nullptr;
+        hoveredBody = 0;
+        selectedBody = 0;
         positionConfirmed = false;
         
         editingBody.emplace(
@@ -890,7 +909,7 @@ void Renderer::renderEditing()
     // Render all other bodies
     for (auto& b : system)
     {
-        renderBody(b);
+        renderBody(*b);
     }
 
     processBloom(10);
@@ -908,19 +927,17 @@ void Renderer::renderEditing()
     ImGui::ColorEdit3("Colour", &editingBody->colour.x);
     ImGui::InputFloat("Mass", &editingBody->mass);
     ImGui::InputFloat("Radius", &editingBody->radius);
+    ImGui::Checkbox("Emissive", &editingBody->emissive);
 
     if (positionConfirmed)
     {
         if (ImGui::Button("Create"))
         {
-            if (positionConfirmed)
-            {
-                editingBody->recalcVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
-                system.push_back(*editingBody);
-                editingBody.reset();
-                timeScale = 1.0f;
-                currentState = NORMAL;
-            }
+            editingBody->recalcVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
+            addBody(std::make_unique<Body>(*editingBody));
+            editingBody.reset();
+            timeScale = 1.0f;
+            currentState = NORMAL;
         } // works only if position is confirmed
     }
 
@@ -931,6 +948,47 @@ void Renderer::renderEditing()
         currentState = NORMAL;
     } // set state to normal, delete pointer
     ImGui::End();
+}
+
+void Renderer::addBody(std::unique_ptr<Body> body)
+{
+    body->ID = nextID;
+    nextID++;
+
+    if (body->emissive)
+    {
+        emissives.push_back(body.get()->ID);
+    }
+
+    system.push_back(std::move(body));
+}
+
+void Renderer::removeBody(unsigned int ID)
+{
+    system.erase(std::remove_if(system.begin(), system.end(), 
+        [&](const std::unique_ptr<Body>& b)
+        {
+            return b->ID == ID;
+        }
+        ), system.end());
+
+    emissives.erase(std::remove(emissives.begin(), emissives.end(), ID), emissives.end());
+
+    if (hoveredBody == ID) hoveredBody = 0;
+    if (selectedBody == ID) selectedBody = 0;
+}
+
+Body* Renderer::getBody(unsigned int ID)
+{
+    if (ID != 0)
+    {
+        for (auto& a : system)
+        {
+            if (a->ID == ID)
+                return a.get();
+        }
+    }
+    return nullptr;
 }
 
 GLFWwindow* Renderer::getWindow()

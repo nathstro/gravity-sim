@@ -1,9 +1,8 @@
 #pragma once
 
-#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "glm/fwd.hpp"
+#include <memory>
 #include "models/Sphere.hpp"
 #include "Body.hpp"
 #include "Shader.hpp"
@@ -22,18 +21,20 @@ class Renderer
 		unsigned int pingpongFBO[2], pingpongTexture[2];
 		Shader *shader, *starShader, *postProcessingShader, *blurShader;
 		Camera* cam;
-		Body* hoveredBody;
-		Body* selectedBody;
+		unsigned int hoveredBody;
+		unsigned int selectedBody;
 		float currentTime;
 		float oldTime;
 		float deltaTime;
 		float elapsedTime;
-		std::vector<Body> system;
-		std::vector<Body*> emissives;
+		std::vector<std::unique_ptr<Body>> system;
+		std::vector<unsigned int> emissives;
 		std::vector<float> stars;
 
 		std::optional<Body> editingBody;
 		bool positionConfirmed;
+		unsigned int nextID;
+		Body* getBody(unsigned int ID);
 
 	public:
 		Renderer();
@@ -55,7 +56,10 @@ class Renderer
 		void updateWindowSize(int width, int height);
 		void selectBody();
 		void togglePositionConfirm();
-		Body* pickObject(const Camera::Ray& ray);
+
+		void addBody(std::unique_ptr<Body> body);
+		void removeBody(unsigned int bodyID);
+		unsigned int pickObject(const Camera::Ray& ray);
 		GLFWwindow* getWindow();
 
 		enum state {

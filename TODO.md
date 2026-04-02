@@ -7,35 +7,29 @@
 	* ~~bloom + other post processing~~
 * better controls:
 	* FIX CAMERA JUMPING
-	* inertia when moving camera
-* ability to resize window
-* time scaling (~~pause time~~, slo-mo, fast-forward)
+* ~~ability to resize window~~
+* ~~time scaling (pause time, slo-mo, fast-forward)~~
 * ~~ability to spawn planets~~
 * ability to save systems
 
+let:
+1.0 unit distance = 10 million km = 10 Gm
+	1 Gm = 0.1 unit distance
+1.0 unit mass = 1 earth mass
+1.0 second = 1 month
 
-states:
-left click
+save file:
+----------
+* current timescale
+* current G constant
+* list of all bodies with:
+	unsigned int ID;
+	glm::vec3 previousPosition;
+	glm::vec3 position;
+	glm::vec3 acceleration;
+	glm::vec3 colour;
 
-on left click press:
-	if (editing position)
-		state = editing velocity
-	if (editing velocity)
-		keep going
-	if (confirmed)
-		keep going
-
-on left click release:
-	if (editing position)
-		???
-	if (editing velocity)
-		state = confirmed
-	if (confirmed)
-		state = confirmed
-
-while isLeftMouseButtonDown:
-	velocityTarget = pickPointfromPlane
-	velocity of body = normalise(target - bodyPosition) * distance(target - bodyPosition)
-	processRendering
-	renderPath
-
+	float mass;
+	float radius;
+	bool emissive;
+	std::string name;

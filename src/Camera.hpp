@@ -22,6 +22,7 @@ class Camera
 		};
 
 		Camera(glm::vec3 initialCameraPos);
+		void showButtons();
 		void handleKeyboard(CameraMove direction, float deltaTime);
 		void handleMouseMovement(float xOffset, float yOffset);
 		void handleScroll(float yOffset);
@@ -34,8 +35,8 @@ class Camera
 		float getFOV() const;
 		
 	private:
-		const float CAM_SPEED;
-		const float SENSITIVITY;
+		float CAM_SPEED;
+		float SENSITIVITY;
 		const glm::vec3 WORLD_UP;
 
 		glm::vec3 cameraPos;

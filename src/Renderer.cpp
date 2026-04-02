@@ -27,14 +27,16 @@ const int INIT_WIDTH = 1470; // initial width of window
 const int INIT_HEIGHT = 956; // initial height of window
 const int SPHERE_SECTORS = 36;
 const int SPHERE_STACKS = 18;
-const float G = 6.674e-11; // gravitational constant
-const float distScale = 1e11; 
 
 const int STAR_COUNT = 500; // number of stars
 const float STAR_RADIUS = 50.0f; // radius of star dome
 const float DT = 0.0167f;
 int timeScale = 1;
-float timeStep = DT * timeScale;
+
+float universeTime = 0.0f;
+int universeSeconds = 0;
+float G = 0.002753f; // gravitational constant
+bool emissivesOn = true;
 
 float xLast = (float)INIT_WIDTH  / 2.0f;
 float yLast = (float)INIT_HEIGHT / 2.0f;
@@ -413,12 +415,13 @@ int Renderer::init()
     starShader = new Shader("shaders/starShader.vert", "shaders/starShader.frag");
     glEnable(GL_PROGRAM_POINT_SIZE);
 
+    /*
     auto blue = std::make_unique<Body>(
         "Aecicon",
         glm::vec3(-2.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
-        10e10f,
+        50,
         0.5f,
         false
     );
@@ -429,7 +432,7 @@ int Renderer::init()
         glm::vec3(2.0f, 0.0f, 0.0f), 
         glm::vec3(0.0f, 0.0f, 1.0f), 
         glm::vec3(0.0f, 1.0f, 0.0f), 
-        10e10f, 
+        50, 
         0.5f, 
         false
     );
@@ -440,7 +443,7 @@ int Renderer::init()
         glm::vec3(0.0f, 0.0f, 3.46f), 
         glm::vec3(1.0f, 0.0f, 0.0f), 
         glm::vec3(1.0f, 0.0f, 0.0f), 
-        10e10f, 
+        50, 
         0.5f, 
         false
     );
@@ -451,11 +454,120 @@ int Renderer::init()
         glm::vec3(0.0f, 0.0f, -3.46f), 
         glm::vec3(-1.0f, 0.0f, 0.0f), 
         glm::vec3(1.0f, 1.0f, 1.0f), 
-        10e10f, 
+        50, 
         0.5f, 
         false
     );
     addBody(std::move(white));
+    */
+
+    auto Sun = std::make_unique<Body>(
+        "Sun",
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        333000.0f,
+        1.2f,
+        true
+    );
+
+    addBody(std::move(Sun));
+
+    auto Mercury = std::make_unique<Body>(
+        "Mercury",
+        glm::vec3(6.975f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 12.45f),
+        glm::vec3(0.8f, 0.8f, 0.8f),
+        0.055f,
+        0.2f,
+        false
+    );
+
+    addBody(std::move(Mercury));
+
+    auto Venus = std::make_unique<Body>(
+        "Venus",
+        glm::vec3(10.79f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 9.198f),
+        glm::vec3(0.9f, 0.8f, 0.6f),
+        0.815f,
+        0.38f,
+        false
+    );
+
+    addBody(std::move(Venus));
+
+    auto Earth = std::make_unique<Body>(
+        "Earth",
+        glm::vec3(14.9f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 7.871f),
+        glm::vec3(0.0f, 0.2f, 1.0f),
+        1.0f,
+        0.4f,
+        false
+    );
+
+    addBody(std::move(Earth));
+
+    auto Mars = std::make_unique<Body>(
+        "Mars",
+        glm::vec3(22.74f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 6.24f),
+        glm::vec3(1.0f, 0.1f, 0.0f),
+        0.107f,
+        0.3f,
+        false
+    );
+
+    addBody(std::move(Mars));
+
+    auto Jupiter = std::make_unique<Body>(
+        "Jupiter",
+        glm::vec3(77.79f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 3.40f),
+        glm::vec3(0.9f, 0.7f, 0.5f),
+        317.8f,
+        0.9f,
+        false
+    );
+
+    addBody(std::move(Jupiter));
+
+    auto Saturn = std::make_unique<Body>(
+        "Saturn",
+        glm::vec3(143.30f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 2.51f),
+        glm::vec3(0.9f, 0.8f, 0.6f),
+        95.2f,
+        0.8f,
+        false
+    );
+
+    addBody(std::move(Saturn));
+
+    auto Uranus = std::make_unique<Body>(
+        "Uranus",
+        glm::vec3(287.23f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.76f),
+        glm::vec3(0.6f, 0.8f, 0.9f),
+        14.5f,
+        0.6f,
+        false
+    );
+
+    addBody(std::move(Uranus));
+
+    auto Neptune = std::make_unique<Body>(
+        "Neptune",
+        glm::vec3(450.30f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.40f),
+        glm::vec3(0.3f, 0.5f, 0.9f),
+        17.1f,
+        0.6f,
+        false
+    );
+
+    addBody(std::move(Neptune));
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
@@ -566,7 +678,12 @@ glm::vec3 pickPointOnPlane(const Camera::Ray& ray)
 
 void Renderer::processLighting()
 {
-    // set properties
+    if (!emissivesOn)
+    {
+        shader->setInt("emissiveCount", 0);
+        return;
+    }
+    
     shader->setInt("emissiveCount", emissives.size());
 
     if (emissives.size() > 0)
@@ -590,7 +707,7 @@ void Renderer::processPhysics()
 
     for (auto& a : system)
     {
-        if (a->getDisplacement(cam->getPosition()) > 200.0f)
+        if (a->getDisplacement(cam->getPosition()) > 800.0f)
         {
             removeBodies.push_back(a->ID);
         }
@@ -622,7 +739,7 @@ void Renderer::processPhysics()
     for (auto&a : system)
     {
         glm::vec3 temp = a->position;
-        a->position = (2.0f * a->position) - (a->previousPosition) + (a->acceleration * timeStep * timeStep);
+        a->position = (2.0f * a->position) - (a->previousPosition) + (a->acceleration * DT * DT);
         a->previousPosition = temp;
     }
 }
@@ -716,8 +833,8 @@ void Renderer::processPath()
     }
 
     simulation.push_back(*editingBody);
-    const int STEPS = 25;
-    const float RENDER_INTERVAL = 0.1f;
+    const int STEPS = 200;
+    const float RENDER_INTERVAL = 0.02f;
     float accumulator = 0.0f;
 
     for (int i = 0; i < STEPS; i++)
@@ -774,15 +891,21 @@ void Renderer::renderPath()
 
 void Renderer::processRendering()
 {// the game loop
-    timeStep = DT * timeScale;
     currentTime = glfwGetTime();
     deltaTime = currentTime - oldTime;
     if (deltaTime > 0.25)
             deltaTime = 0.25;
     oldTime = currentTime;
+
+    universeTime += deltaTime * timeScale;
+    universeSeconds = (int)floor(universeTime);
+
     elapsedTime += deltaTime * timeScale;
-    
+
     keyCallback(window, cam, deltaTime);
+
+    if (glfwWindowShouldClose(window))
+        return;
 
     // first pass
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -834,6 +957,10 @@ void Renderer::processRendering()
         timeScale = 0.0f;
         currentState = EDITING;
     }
+    ImGui::SliderInt("Timescale", &timeScale, 0, 100);
+    ImGui::InputFloat("G", &G);
+    ImGui::Checkbox("Emissives on?", &emissivesOn);
+    cam->showButtons();
     ImGui::End();
 
     ImGui::Begin("User");
@@ -864,6 +991,9 @@ void Renderer::processRendering()
     ImGui::SeparatorText("Current System:");
     ImGui::Text("Body count: %zu", system.size());
     ImGui::Text("Emissive body count: %zu", emissives.size());
+
+    ImGui::SeparatorText("Time Passed:");
+    ImGui::Text("%i years and %i months", universeSeconds / 12, universeSeconds % 12);
 
     ImGui::End();
 
@@ -903,10 +1033,10 @@ void Renderer::renderNormal()
 
     if (timeScale > 0.0f)
     {
-        while (elapsedTime >= timeStep)
+        while (elapsedTime >= DT)
         {
             processPhysics();
-            elapsedTime -= timeStep;
+            elapsedTime -= DT;
         }
     }
     
@@ -1023,10 +1153,10 @@ void Renderer::renderEditing()
 
     if (timeScale > 0.0f)
     {
-        while (elapsedTime >= timeStep)
+        while (elapsedTime >= DT)
         {
             processPhysics();
-            elapsedTime -= timeStep;
+            elapsedTime -= DT;
         }
     }
     
@@ -1150,5 +1280,27 @@ void Renderer::updateFramebufferSize(int fbWidth, int fbHeight)
     this->fbWidth = fbWidth;
     this->fbHeight = fbHeight;
 
-    // to do: update texture
+    glViewport(0, 0, fbWidth, fbHeight);
+
+    glBindTexture(GL_TEXTURE_2D, colourBufferTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+        fbWidth, fbHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glBindTexture(GL_TEXTURE_2D, lightBufferTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+        fbWidth, fbHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+
+    glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+        fbWidth, fbHeight);
+
+    for (int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, pingpongTexture[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+            fbWidth, fbHeight, 0, GL_RGB, GL_FLOAT, NULL);
+    }
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }

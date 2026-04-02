@@ -2,11 +2,18 @@
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
+#include "imgui.h"
 
 Camera::Camera(glm::vec3 cameraPos)
 : cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), fov(55.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
 {
 	updateCameraVectors();
+}
+
+void Camera::showButtons()
+{
+	ImGui::SliderFloat("Cam Speed", &CAM_SPEED, 3.0f, 30.0f);
+	ImGui::SliderFloat("Sensitivity", &SENSITIVITY, 0.05, 0.5);
 }
 
 void Camera::handleKeyboard(CameraMove direction, float deltaTime)
@@ -67,7 +74,7 @@ glm::mat4 Camera::getViewMatrix() const
 
 glm::mat4 Camera::getProjectionMatrix(int fbWidth, int fbHeight) const
 {
-	return glm::perspective(glm::radians(fov), (float)fbWidth / fbHeight, 0.1f, 100.0f);
+	return glm::perspective(glm::radians(fov), (float)fbWidth / fbHeight, 0.1f, 500.0f);
 }
 
 glm::vec3 Camera::getPosition() const

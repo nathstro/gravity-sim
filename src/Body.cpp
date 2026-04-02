@@ -17,9 +17,9 @@ Body::Body(std::string name, glm::vec3 position, glm::vec3 velocity, glm::vec3 c
 	emissive(emissive) 
 {}
 
-void Body::recalcVelocity(glm::vec3 velocity)
+void Body::setVelocity(glm::vec3 velocity, float timeStep)
 {
-	previousPosition = position - (velocity * 0.016f);
+	previousPosition = position - (velocity * timeStep);
 }
 
 float Body::getDisplacement(glm::vec3 origin)

@@ -16,10 +16,11 @@ class Renderer
 		Sphere baseSphere;
 		unsigned int sphereVAO, sphereVBO, sphereEBO;
 		unsigned int starsVAO, starsVBO;
+		unsigned int pathVAO, pathVBO;
 		unsigned int quadVAO, quadVBO;
 		unsigned int FBO, RBO, colourBufferTexture, lightBufferTexture;
 		unsigned int pingpongFBO[2], pingpongTexture[2];
-		Shader *shader, *starShader, *postProcessingShader, *blurShader;
+		Shader *shader, *starShader, *postProcessingShader, *blurShader, *pathShader;
 		Camera* cam;
 		unsigned int hoveredBody;
 		unsigned int selectedBody;
@@ -32,7 +33,7 @@ class Renderer
 		std::vector<float> stars;
 
 		std::optional<Body> editingBody;
-		bool positionConfirmed;
+		std::vector<glm::vec3> predictedPath;
 		unsigned int nextID;
 		Body* getBody(unsigned int ID);
 
@@ -42,10 +43,14 @@ class Renderer
 		int initUI();
 		void drop();
 		void processPhysics();
+		void processLighting();
+		void processPath();
+
 		void renderBody(Body& body);
 		void renderEditingBody();
 		void renderStars();
-		void processLighting();
+		void renderPath();
+
 		void processRendering();
 		void renderNormal();
 		void renderEditing();
@@ -55,7 +60,6 @@ class Renderer
 		void updateFramebufferSize(int fbWidth, int fbHeight);
 		void updateWindowSize(int width, int height);
 		void selectBody();
-		void togglePositionConfirm();
 
 		void addBody(std::unique_ptr<Body> body);
 		void removeBody(unsigned int bodyID);
@@ -65,5 +69,11 @@ class Renderer
 		enum state {
 			NORMAL, EDITING
 		};
+
+		enum editorState {
+			EDITING_POSITION, EDITING_VELOCITY, CREATED
+		};
+
 		state currentState;
+		editorState currentEditorState;
 };

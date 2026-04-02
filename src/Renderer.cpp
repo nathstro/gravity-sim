@@ -74,26 +74,48 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 
     if (button == GLFW_MOUSE_BUTTON_LEFT)
     {
-        if (action == GLFW_PRESS)
+        if (ImGui::GetIO().WantCaptureMouse) return;
+
+        switch (r->currentState)
         {
-            isLeftMouseDown = true;
-        }
-        else if (action == GLFW_RELEASE)
-        {
-            isLeftMouseDown = false;
-            if (!ImGui::GetIO().WantCaptureMouse)
-            {
-                switch (r->currentState)
-                {   
-                    case Renderer::EDITING:
-                        r->togglePositionConfirm();
-                        break;
-                
-                    case Renderer::NORMAL:
-                        r->selectBody();
-                        break;
+            case Renderer::EDITING:
+                if (action == GLFW_PRESS)
+                {
+                    switch(r->currentEditorState)
+                    {
+                        case Renderer::EDITING_POSITION:
+                            r->currentEditorState = Renderer::EDITING_VELOCITY;
+                            break;
+
+                        default:
+                            break;
+                    }
                 }
-            }
+                else if (action == GLFW_RELEASE)
+                {
+                    switch(r->currentEditorState)
+                    {
+                        case Renderer::EDITING_POSITION:
+                            break;
+
+                        case Renderer::EDITING_VELOCITY:
+                            r->currentEditorState = Renderer::CREATED;
+                            break;
+
+                        case Renderer::CREATED:
+                            r->currentEditorState = Renderer::EDITING_POSITION;
+                            break;
+                    }
+                }
+                
+                break;
+
+            case Renderer::NORMAL:
+                if (action == GLFW_RELEASE)
+                {
+                    r->selectBody();
+                }
+                break;
         }
     }
 }
@@ -177,7 +199,8 @@ Renderer::Renderer()
     oldTime(0.0f),
     deltaTime(0.0f),
     elapsedTime(0.0f),
-    currentState(NORMAL)
+    currentState(NORMAL),
+    currentEditorState(EDITING_POSITION)
 {}
 
 int Renderer::init()
@@ -244,6 +267,11 @@ int Renderer::init()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    // Initialise path
+    glGenVertexArrays(1, &pathVAO);
+    glGenBuffers(1, &pathVBO);
+    pathShader = new Shader("shaders/path.vert", "shaders/path.frag");
 
     // Initialise framebuffer
     glGenFramebuffers(1, &FBO);
@@ -353,6 +381,7 @@ int Renderer::init()
     std::normal_distribution<float> starPos(0.0f, 1.0f);
     std::normal_distribution<float> starSize(1.5f, 0.75f);
 
+    stars.reserve(STAR_COUNT * 5);
     for (int i = 0; i < STAR_COUNT; i++)
     {
         float x = starPos(rng);
@@ -383,16 +412,6 @@ int Renderer::init()
 
     starShader = new Shader("shaders/starShader.vert", "shaders/starShader.frag");
     glEnable(GL_PROGRAM_POINT_SIZE);
-
-    // Initialise bodies 
-    /*
-    Body earth("Earth", glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 10e10f, 0.5f, false);
-    system.push_back(earth);
-
-    Body sun("Sun", glm::vec3(0.0f, 0.0f, 4.0f), glm::vec3(-3.0f, 0.0f, 0.0f), glm::vec3(0.8f, 0.8f, 0.8f), 8e10f, 1.0f, true);
-    system.push_back(sun);
-    emissives.push_back(&system[1]);
-    */
 
     auto blue = std::make_unique<Body>(
         "Aecicon",
@@ -485,6 +504,8 @@ void Renderer::drop()
     postProcessingShader = nullptr;
     delete blurShader;
     blurShader = nullptr;
+    delete pathShader;
+    pathShader = nullptr;
     delete cam;
     cam = nullptr;
 
@@ -565,12 +586,19 @@ void Renderer::processLighting()
 
 void Renderer::processPhysics()
 {
+    std::vector<unsigned int> removeBodies;
+
     for (auto& a : system)
     {
         if (a->getDisplacement(cam->getPosition()) > 200.0f)
         {
-            removeBody(a->ID);
+            removeBodies.push_back(a->ID);
         }
+    }
+
+    for (unsigned int ID : removeBodies)
+    {
+        removeBody(ID);
     }
 
     for (auto& a : system)
@@ -646,6 +674,7 @@ void Renderer::renderStars()
 {
     glBindVertexArray(starsVAO);
 
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glDrawArrays(GL_POINTS, 0, stars.size() / 5);
 }
 
@@ -673,6 +702,74 @@ void Renderer::processBloom(int passes)
         horizontal = !horizontal;
         if (first) first = false;
     }
+}
+
+void Renderer::processPath()
+{
+    std::vector<Body> simulation;
+    simulation.reserve(system.size());
+    predictedPath.clear();
+
+    for (const auto& a : system)
+    {
+        simulation.push_back(*a);
+    }
+
+    simulation.push_back(*editingBody);
+    const int STEPS = 25;
+    const float RENDER_INTERVAL = 0.1f;
+    float accumulator = 0.0f;
+
+    for (int i = 0; i < STEPS; i++)
+    {
+        for (auto& a : simulation)
+        {
+            glm::vec3 acceleration(0.0f);
+
+            for (auto& b : simulation)
+            {
+                if (&a == &b) continue;
+
+                glm::vec3 direction = b.position - a.position;
+                float distance = glm::length(direction) + 0.001f;
+                float magnitudeAcceleration = (G * b.mass) / (distance * distance);
+
+                acceleration += magnitudeAcceleration * glm::normalize(direction);
+            }
+
+            a.acceleration = acceleration;
+        }
+
+        for (auto&a : simulation)
+        {
+            glm::vec3 temp = a.position;
+            a.position = (2.0f * a.position) - (a.previousPosition) + (a.acceleration * DT * DT);
+            a.previousPosition = temp;
+        }
+
+        accumulator += DT;
+        if (accumulator >= RENDER_INTERVAL)
+        {
+            predictedPath.push_back(simulation.back().position);
+            accumulator = 0.0f;
+        }
+    }
+}
+
+void Renderer::renderPath()
+{
+    if (predictedPath.size() == 0) return;
+
+    glBindVertexArray(pathVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, pathVBO);
+    glBufferData(GL_ARRAY_BUFFER, predictedPath.size() * sizeof(glm::vec3), predictedPath.data(), GL_DYNAMIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glPointSize(4.0f);
+    glDrawArrays(GL_POINTS, 0, predictedPath.size());
 }
 
 void Renderer::processRendering()
@@ -764,6 +861,10 @@ void Renderer::processRendering()
         ImGui::Text("%s", getBody(selectedBody)->name.c_str());
     }
 
+    ImGui::SeparatorText("Current System:");
+    ImGui::Text("Body count: %zu", system.size());
+    ImGui::Text("Emissive body count: %zu", emissives.size());
+
     ImGui::End();
 
     ImGui::Render();
@@ -816,7 +917,7 @@ void Renderer::renderNormal()
         renderBody(*b);
     }
 
-    processBloom(10);
+    processBloom(5);
 
     if (selectedBody != 0)
     {
@@ -858,7 +959,7 @@ void Renderer::renderEditing()
     {
         hoveredBody = 0;
         selectedBody = 0;
-        positionConfirmed = false;
+        currentEditorState = EDITING_POSITION;
         
         editingBody.emplace(
             "New Body",
@@ -871,11 +972,24 @@ void Renderer::renderEditing()
         );
     }
 
-    if (!positionConfirmed)
+    double mouseX, mouseY;
+    glfwGetCursorPos(window, &mouseX, &mouseY);
+
+    switch (currentEditorState)
     {
-        double mouseX, mouseY;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-        editingBody->position = pickPointOnPlane(cam->getRay(mouseX, mouseY, width, height));
+        case EDITING_POSITION:
+            editingBody->position = pickPointOnPlane(cam->getRay(mouseX, mouseY, width, height));
+            break;
+
+        case EDITING_VELOCITY:
+        {
+            glm::vec3 distance = editingBody->position - pickPointOnPlane(cam->getRay(mouseX, mouseY, width, height));
+            editingBody->setVelocity(glm::normalize(distance) * glm::length(distance), DT);
+            break;
+        }
+
+        case CREATED:
+            break;
     }
 
     // BOTH
@@ -889,6 +1003,14 @@ void Renderer::renderEditing()
     starShader->setMat4("projection", projection);
     starShader->setMat4("view", glm::mat4(glm::mat3(view)));
     renderStars();
+
+    // Render path
+    processPath();
+
+    pathShader->use();
+    pathShader->setMat4("projection", projection);
+    pathShader->setMat4("view", view);
+    renderPath();
 
     // BOTH
     shader->use();
@@ -909,8 +1031,8 @@ void Renderer::renderEditing()
     }
     
     processLighting();
-
-    // Render wireframe
+    
+    // Render editing body
     renderEditingBody();
 
     // Render all other bodies
@@ -936,11 +1058,10 @@ void Renderer::renderEditing()
     ImGui::InputFloat("Radius", &editingBody->radius);
     ImGui::Checkbox("Emissive", &editingBody->emissive);
 
-    if (positionConfirmed)
+    if (currentEditorState == CREATED)
     {
         if (ImGui::Button("Create"))
         {
-            editingBody->recalcVelocity(glm::vec3(0.0f, 0.0f, 0.0f));
             addBody(std::make_unique<Body>(*editingBody));
             editingBody.reset();
             timeScale = 1.0f;
@@ -1016,11 +1137,6 @@ void Renderer::handleCameraZoom(float yOffset)
 void Renderer::selectBody()
 {
     selectedBody = hoveredBody;
-}
-
-void Renderer::togglePositionConfirm()
-{
-    positionConfirmed = !positionConfirmed;
 }
 
 void Renderer::updateWindowSize(int width, int height)

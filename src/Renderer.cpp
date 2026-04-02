@@ -567,6 +567,14 @@ void Renderer::processPhysics()
 {
     for (auto& a : system)
     {
+        if (a->getDisplacement(cam->getPosition()) > 200.0f)
+        {
+            removeBody(a->ID);
+        }
+    }
+
+    for (auto& a : system)
+    {
         glm::vec3 acceleration(0.0f);
 
         for (auto& b : system)
@@ -676,7 +684,6 @@ void Renderer::processRendering()
             deltaTime = 0.25;
     oldTime = currentTime;
     elapsedTime += deltaTime * timeScale;
-
     
     keyCallback(window, cam, deltaTime);
 

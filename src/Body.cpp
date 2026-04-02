@@ -22,6 +22,11 @@ void Body::recalcVelocity(glm::vec3 velocity)
 	previousPosition = position - (velocity * 0.016f);
 }
 
+float Body::getDisplacement(glm::vec3 origin)
+{
+	return glm::length(position - origin);
+}
+
 float Body::getVelocity()
 {
 	return glm::length((position - previousPosition) / 0.016f);

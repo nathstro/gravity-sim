@@ -17,6 +17,7 @@ struct Body
 
 	Body(std::string name, glm::vec3 position, glm::vec3 velocity, glm::vec3 colour, float mass, float radius, bool emissive);
 	void recalcVelocity(glm::vec3 velocity);
+	float getDisplacement(glm::vec3 origin);
 	float getVelocity();
 	float getAcceleration();
 };

@@ -44,16 +44,14 @@ bool isRightMouseDown = false;
 bool isLeftMouseDown = false;
 bool firstMouse = true;
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void windowSizeCallback(GLFWwindow* window, int width, int height) {
     Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
     r->updateWindowSize(width, height);
+}
 
-    int fbWidth, fbHeight;
-    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-
-    r->updateFramebufferSize(fbWidth, fbHeight);
-
-    glViewport(0, 0, width, height);
+void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+    Renderer* r = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+    r->updateFramebufferSize(width, height);
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -243,8 +241,14 @@ int Renderer::init()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
+    glfwSetWindowSizeCallback(window, windowSizeCallback);
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetScrollCallback(window, scrollCallback);
+    
+    glfwGetWindowSize(window, &width, &height);
+    updateFramebufferSize(width, height);
+    glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+    updateFramebufferSize(fbWidth, fbHeight);
 
     // Creating sphere and objects
     baseSphere = Sphere(1.0f, SPHERE_SECTORS, SPHERE_STACKS);
@@ -571,16 +575,7 @@ int Renderer::init()
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
-    glEnable(GL_DEPTH_TEST);
-    
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
 
-    int fbw, fbh;
-    glfwGetFramebufferSize(window, &fbw, &fbh);
-
-    std::cout << "Window: " << w << "x" << h << "\n";
-    std::cout << "Framebuffer: " << fbw << "x" << fbh << "\n";
 	return 0;
 }
 

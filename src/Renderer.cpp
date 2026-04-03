@@ -1109,7 +1109,10 @@ void Renderer::renderEditing()
         case EDITING_VELOCITY:
         {
             glm::vec3 distance = editingBody->position - pickPointOnPlane(cam->getRay(mouseX, mouseY, width, height));
-            editingBody->setVelocity(glm::normalize(distance) * glm::length(distance), DT);
+            if (glm::length(distance) > 1e-6f)
+                editingBody->setVelocity(distance, DT);
+            else
+                editingBody->setVelocity(glm::vec3(0.0f), DT);
             break;
         }
 

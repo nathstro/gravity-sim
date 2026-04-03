@@ -1,0 +1,101 @@
+time 24.944572
+campos 7.889156 18.661489 47.346748
+
+pitch -31.200014
+yaw -88.900002
+body Sun
+position 0.044430 -0.000000 0.017550
+velocity 0.003433 -0.000000 0.001948
+colour   1.000000 1.000000 1.000000
+mass     333000.000000
+radius   4.500000
+emissive 1
+
+body Mercury
+position 2.151283 -0.000000 -7.651987
+velocity 10.507672 -0.000000 4.784286
+colour   0.800000 0.800000 0.800000
+mass     0.055000
+radius   0.350000
+emissive 0
+
+body Venus
+position -9.090887 -0.000000 5.529585
+velocity -5.105555 -0.000000 -8.253782
+colour   0.900000 0.800000 0.600000
+mass     0.815000
+radius   0.530000
+emissive 0
+
+body Earth
+position 13.586851 -0.000000 6.179129
+velocity -3.377974 -0.000000 7.501632
+colour   0.000000 0.200000 1.000000
+mass     1.000000
+radius   0.550000
+emissive 0
+
+body Mars
+position 12.447070 -0.000000 18.606201
+velocity -5.611419 -0.000000 3.529668
+colour   1.000000 0.100000 0.000000
+mass     0.107000
+radius   0.400000
+emissive 0
+
+body Jupiter
+position 35.048275 -0.000000 68.435295
+velocity -3.219366 -0.000000 1.565933
+colour   0.900000 0.700000 0.500000
+mass     317.799988
+radius   3.200000
+emissive 0
+
+body Saturn
+position 126.282318 -0.000000 60.602112
+velocity -1.423836 -0.000000 2.386093
+colour   0.900000 0.800000 0.600000
+mass     95.199997
+radius   2.700000
+emissive 0
+
+body Uranus
+position 287.230011 -0.000000 43.881042
+velocity 0.000000 -0.000000 1.836777
+colour   0.600000 0.800000 0.900000
+mass     14.500000
+radius   1.400000
+emissive 0
+
+body Neptune
+position 450.299988 -0.000000 34.906307
+velocity 0.000000 -0.000000 1.461267
+colour   0.300000 0.500000 0.900000
+mass     17.100000
+radius   1.350000
+emissive 0
+
+body NeoEarth
+position 13.166022 -0.000000 31.290726
+velocity -0.744939 -0.000000 4.474759
+colour   0.117647 1.000000 0.000000
+mass     5.000000
+radius   1.000000
+emissive 1
+
+body Asteroid
+position 3.055163 -0.000004 18.303137
+velocity -0.375316 0.000000 -8.288860
+colour   0.514706 0.315384 0.315384
+mass     0.300000
+radius   200000.0
+emissive 0
+
+body whoistsbruhhh
+position -1.935574 -0.000000 7.089729
+velocity -2.517812 -0.000000 -11.133700
+colour   0.539792 0.176471 1.000000
+mass     0.200000
+radius   0.400000
+emissive 1
+

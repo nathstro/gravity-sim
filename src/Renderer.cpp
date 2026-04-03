@@ -17,9 +17,12 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <exception>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <string>
 
 // constants
@@ -379,7 +382,6 @@ int Renderer::init()
     glEnableVertexAttribArray(1);
     
     // Initialise camera and shader
-    cam = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
     shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
 
     // Initialise stars
@@ -465,113 +467,9 @@ int Renderer::init()
     addBody(std::move(white));
     */
 
-    auto Sun = std::make_unique<Body>(
-        "Sun",
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        333000.0f,
-        1.2f,
-        true
-    );
-
-    addBody(std::move(Sun));
-
-    auto Mercury = std::make_unique<Body>(
-        "Mercury",
-        glm::vec3(6.975f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 12.45f),
-        glm::vec3(0.8f, 0.8f, 0.8f),
-        0.055f,
-        0.2f,
-        false
-    );
-
-    addBody(std::move(Mercury));
-
-    auto Venus = std::make_unique<Body>(
-        "Venus",
-        glm::vec3(10.79f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 9.198f),
-        glm::vec3(0.9f, 0.8f, 0.6f),
-        0.815f,
-        0.38f,
-        false
-    );
-
-    addBody(std::move(Venus));
-
-    auto Earth = std::make_unique<Body>(
-        "Earth",
-        glm::vec3(14.9f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 7.871f),
-        glm::vec3(0.0f, 0.2f, 1.0f),
-        1.0f,
-        0.4f,
-        false
-    );
-
-    addBody(std::move(Earth));
-
-    auto Mars = std::make_unique<Body>(
-        "Mars",
-        glm::vec3(22.74f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 6.24f),
-        glm::vec3(1.0f, 0.1f, 0.0f),
-        0.107f,
-        0.3f,
-        false
-    );
-
-    addBody(std::move(Mars));
-
-    auto Jupiter = std::make_unique<Body>(
-        "Jupiter",
-        glm::vec3(77.79f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 3.40f),
-        glm::vec3(0.9f, 0.7f, 0.5f),
-        317.8f,
-        0.9f,
-        false
-    );
-
-    addBody(std::move(Jupiter));
-
-    auto Saturn = std::make_unique<Body>(
-        "Saturn",
-        glm::vec3(143.30f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 2.51f),
-        glm::vec3(0.9f, 0.8f, 0.6f),
-        95.2f,
-        0.8f,
-        false
-    );
-
-    addBody(std::move(Saturn));
-
-    auto Uranus = std::make_unique<Body>(
-        "Uranus",
-        glm::vec3(287.23f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.76f),
-        glm::vec3(0.6f, 0.8f, 0.9f),
-        14.5f,
-        0.6f,
-        false
-    );
-
-    addBody(std::move(Uranus));
-
-    auto Neptune = std::make_unique<Body>(
-        "Neptune",
-        glm::vec3(450.30f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.40f),
-        glm::vec3(0.3f, 0.5f, 0.9f),
-        17.1f,
-        0.6f,
-        false
-    );
-
-    addBody(std::move(Neptune));
+    cam = new Camera();
+    systemName = "solarSystem";
+    loadFromFile("saves/solarSystem.sim");
 
     blurShader = new Shader("shaders/postProcessingShader.vert", "shaders/gaussianBlur.frag");
     postProcessingShader = new Shader("shaders/postProcessingShader.vert", "shaders/postProcessingShader.frag");
@@ -690,8 +588,8 @@ void Renderer::processLighting()
             shader->setVec3(index + "position", b->position);
             shader->setVec3(index + "colour", b->colour);
             shader->setFloat(index + "constant", 1.0f);
-            shader->setFloat(index + "linear", 0.09f);
-            shader->setFloat(index + "quadratic", 0.032f);
+            shader->setFloat(index + "linear", 0.02f);
+            shader->setFloat(index + "quadratic", 0.002f);
         }
     }
 }
@@ -946,16 +844,28 @@ void Renderer::processRendering()
     // BOTH
 
     //imgui // NORMAL
-    ImGui::Begin("Tools");
+    ImGui::Begin("System");
+    ImGui::InputText("Name", &systemName);
+
     if (ImGui::Button("Spawn new body"))
     {
         timeScale = 0.0f;
         currentState = EDITING;
     }
-    ImGui::SliderInt("Timescale", &timeScale, 0, 100);
-    ImGui::InputFloat("G", &G);
+
     ImGui::Checkbox("Emissives on?", &emissivesOn);
     cam->showButtons();
+
+    if (currentState == NORMAL)
+    {
+        ImGui::SliderInt("Timescale", &timeScale, 0, 100);
+        ImGui::InputFloat("G", &G);
+        if (ImGui::Button("Save System"))
+        {
+            saveToFile("saves/" + systemName + ".sim");
+        }
+    }
+
     ImGui::End();
 
     ImGui::Begin("User");
@@ -1037,9 +947,9 @@ void Renderer::renderNormal()
     
     processLighting();
 
-    for (auto& b : system)
+    for (auto& a : system)
     {
-        renderBody(*b);
+        renderBody(*a);
     }
 
     processBloom(5);
@@ -1056,10 +966,10 @@ void Renderer::renderNormal()
                     selected->position.x, selected->position.y, selected->position.z);
         
         ImGui::SeparatorText("Velocity:");
-        ImGui::Text("%.3f units/second\n", selected->getVelocity());
+        ImGui::Text("%.3f units/second\n", glm::length(selected->getVelocity()));
 
         ImGui::SeparatorText("Acceleration:");
-        ImGui::Text("%.3f units/second squared\n", selected->getAcceleration());
+        ImGui::Text("%.3f units/second squared\n", glm::length(selected->acceleration));
         
         ImGui::SeparatorText("Properties:");
         //ImGui::Text("Emissive:"); to do: moving bodies around systems
@@ -1086,15 +996,7 @@ void Renderer::renderEditing()
         selectedBody = 0;
         currentEditorState = EDITING_POSITION;
         
-        editingBody.emplace(
-            "New Body",
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(1.0f, 1.0f, 1.0f),
-            100.0f,
-            1.0f,
-            false
-        );
+        editingBody.emplace();
     }
 
     double mouseX, mouseY;
@@ -1164,9 +1066,9 @@ void Renderer::renderEditing()
     renderEditingBody();
 
     // Render all other bodies
-    for (auto& b : system)
+    for (auto& a : system)
     {
-        renderBody(*b);
+        renderBody(*a);
     }
 
     processBloom(10);
@@ -1177,7 +1079,7 @@ void Renderer::renderEditing()
                  editingBody->position.x, editingBody->position.y, editingBody->position.z);
 
     ImGui::SeparatorText("Velocity:");
-    ImGui::Text("%.3f units/second\n", editingBody->getVelocity());
+    ImGui::Text("%.3f units/second\n", glm::length(editingBody->getVelocity()));
 
     ImGui::SeparatorText("Properties:");
     ImGui::InputText("Name", &editingBody->name);
@@ -1301,4 +1203,172 @@ void Renderer::updateFramebufferSize(int fbWidth, int fbHeight)
 
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
+}
+
+void split(std::string string, std::string delimiter) {
+    std::string str = "geeks,for,geeks";
+
+    // Delimiter
+    std::string del = ",";
+
+    // Find first occurrence of the delimiter
+    auto pos = str.find(del);
+
+    // While there are still delimiters in the
+    // string
+    while (pos != std::string::npos) {
+
+        // Extracting the substring up to the
+        // delimiter
+        std::cout << "\"" << str.substr(0, pos) <<
+          "\"" << " ";
+
+        // Erase the extracted part from the
+        // original string
+        str.erase(0, pos + del.length());
+
+        // Find the next occurrence of the
+        // delimiter
+        pos = str.find(del);
+    }
+    
+    std::cout << "\"" << str << "\"" << " ";
+}
+
+void Renderer::loadFromFile(std::string pathToFile)
+{
+    try {
+        std::ifstream saveFile(pathToFile);
+
+        if (!saveFile)
+            throw std::runtime_error("Could not open save file for reading:");
+
+        system.clear();
+        emissives.clear();
+        std::string line;
+        Body* current;
+
+        while (std::getline(saveFile, line))
+        {
+            if (line.empty() || line[0] == '#') continue;
+
+            std::istringstream iss(line);
+            std::string key;
+            iss >> key;
+
+            if (key.empty()) continue;
+
+            if (key == "time")
+            {
+                iss >> universeTime;
+            }
+            else if (key == "campos")
+            {
+                float x, y, z;
+                iss >> x >> y >> z;
+                cam->setPosition(glm::vec3(x, y, z));
+            }
+          /*else if (key == "pitch")
+            {
+                float pitch;
+                iss >> pitch;
+                cam->setPitch(pitch);
+            }                           to-do: fix first mouse bug
+            else if (key == "yaw")
+            {
+                float yaw;
+                iss >> yaw;
+                cam->setYaw(yaw);
+            }*/
+            else if (key == "body")
+            {
+                std::string name;
+                iss >> name;
+
+                auto b = std::make_unique<Body>();
+                current = b.get();
+                current->name = name;
+
+                addBody(std::move(b));
+            }
+            else if (key == "position" && current)
+            {
+                iss >> current->position.x >> current->position.y >> current->position.z;
+            }
+            else if (key == "velocity" && current)
+            {
+                float x, y, z;
+                iss >> x >> y >> z;
+                current->setVelocity(glm::vec3(x, y, z), DT);
+            }
+            else if (key == "colour" && current)
+            {
+                iss >> current->colour.x >> current->colour.y >> current->colour.z;
+            }
+            else if (key == "mass" && current)
+            {
+                iss >> current->mass;
+            }
+            else if (key == "radius" && current)
+            {
+                iss >> current->radius;
+            }
+            else if (key == "emissive" && current)
+            {
+                iss >> current->emissive;
+
+                if (current->emissive)
+                    emissives.push_back(current->ID);
+            }
+        }
+    }
+    catch (const std::exception ex) {
+        std::cout << "ERROR: " << ex.what() << std::endl;
+    }
+}
+
+void Renderer::saveToFile(std::string pathToFile)
+{   
+    try {
+        std::ofstream saveFile(pathToFile);
+
+        if (!saveFile)
+            throw std::runtime_error("Could not open save file for writing:");
+
+        saveFile << "time " + std::to_string(universeTime) + "\n";
+
+        glm::vec3 camPos = cam->getPosition();
+
+        saveFile << "campos " + std::to_string(camPos.x) +
+                            " "       + std::to_string(camPos.y) +
+                            " "       + std::to_string(camPos.z) + "\n\n";
+        saveFile << "pitch " + std::to_string(cam->getPitch()) + "\n";
+        saveFile << "yaw " + std::to_string(cam->getYaw()) + "\n";
+
+        // Save each body
+        for (auto& a : system)
+        {
+            saveFile << "body " + a->name + "\n";
+            saveFile << "position " + std::to_string(a->position.x) +
+                                " "         + std::to_string(a->position.y) +
+                                " "         + std::to_string(a->position.z) + "\n";
+
+            glm::vec3 aVelocity = a->getVelocity();
+            saveFile << "velocity " + std::to_string(aVelocity.x)   +
+                                " "         + std::to_string(aVelocity.y)   +
+                                " "         + std::to_string(aVelocity.z)   + "\n";
+            saveFile << "colour   " + std::to_string(a->colour.x)   +
+                                " "         + std::to_string(a->colour.y)   +
+                                " "         + std::to_string(a->colour.z)   + "\n";
+            saveFile << "mass     " + std::to_string(a->mass)       + "\n";
+            saveFile << "radius   " + std::to_string(a->radius)     + "\n";
+            saveFile << "emissive " + std::to_string(a->emissive)   + "\n\n";
+        }
+
+        if (!saveFile)
+            throw std::runtime_error("Could not write to save file:");
+    }
+    catch (const std::exception ex) {
+            std::cout << "ERROR: " << ex.what() << std::endl;
+        }
 }

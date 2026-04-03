@@ -21,8 +21,12 @@ class Camera
 			glm::vec3 direction;
 		};
 
-		Camera(glm::vec3 initialCameraPos);
+		Camera();
 		void showButtons();
+		void setPosition(float x, float y, float z);
+		void setPosition(glm::vec3 position);
+		void setPitch(float pitch);
+		void setYaw(float yaw);
 		void handleKeyboard(CameraMove direction, float deltaTime);
 		void handleMouseMovement(float xOffset, float yOffset);
 		void handleScroll(float yOffset);

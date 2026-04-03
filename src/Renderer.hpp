@@ -28,6 +28,7 @@ class Renderer
 		float oldTime;
 		float deltaTime;
 		float elapsedTime;
+		std::string systemName;
 		std::vector<std::unique_ptr<Body>> system;
 		std::vector<unsigned int> emissives;
 		std::vector<float> stars;
@@ -65,6 +66,9 @@ class Renderer
 		void removeBody(unsigned int bodyID);
 		unsigned int pickObject(const Camera::Ray& ray);
 		GLFWwindow* getWindow();
+
+		void loadFromFile(std::string pathToFile);
+		void saveToFile(std::string pathToFile);
 
 		enum state {
 			NORMAL, EDITING

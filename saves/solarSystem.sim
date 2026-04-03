@@ -1,0 +1,77 @@
+# Solar system
+time 0.0
+campos 0.0 0.0 40.0
+pitch -90.0
+yaw -30.0
+
+body Sun
+position 0.0 0.0 0.0
+velocity 0.0 0.0 0.0
+colour   1.0 1.0 1.0
+mass     333000.0
+radius   4.50
+emissive 1
+
+body Mercury
+position 6.975 0.0 0.0
+velocity 0.0 0.0 12.45
+colour   0.8 0.8 0.8
+mass     0.055
+radius   0.35
+emissive 0
+
+body Venus
+position 10.79 0.0 0.0
+velocity 0.0 0.0 9.198
+colour   0.9 0.8 0.6
+mass     0.815
+radius   0.53
+emissive 0
+
+body Earth
+position 14.9 0.0 0.0
+velocity 0.0 0.0 7.871
+colour   0.0 0.2 1.0
+mass     1.0
+radius   0.55
+emissive 0
+
+body Mars
+position 22.74 0.0 0.0
+velocity 0.0 0.0 6.24
+colour   1.0 0.1 0.0
+mass     0.107
+radius   0.40
+emissive 0
+
+body Jupiter
+position 77.79 0.0 0.0
+velocity 0.0 0.0 3.40
+colour   0.9 0.7 0.5
+mass     317.8
+radius   3.20
+emissive 0
+
+body Saturn
+position 143.30 0.0 0.0
+velocity 0.0 0.0 2.51
+colour   0.9 0.8 0.6
+mass     95.2
+radius   2.70
+emissive 0
+
+body Uranus
+position 287.23 0.0 0.0
+velocity 0.0 0.0 1.76
+colour   0.6 0.8 0.9
+mass     14.5
+radius   1.40
+emissive 0
+
+body Neptune
+position 450.30 0.0 0.0
+velocity 0.0 0.0 1.40
+colour   0.3 0.5 0.9
+mass     17.1
+radius   1.35
+emissive 0

@@ -4,8 +4,16 @@
 #include "glm/matrix.hpp"
 #include "imgui.h"
 
-Camera::Camera(glm::vec3 cameraPos)
-: cameraPos(cameraPos), cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)), cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), yaw(-90.0f), pitch(0.0f), fov(55.0f), CAM_SPEED(5.5f), SENSITIVITY(0.1f), WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
+Camera::Camera()
+: 	cameraPos(glm::vec3(0.0f, 0.0f, 0.0f)),
+	cameraFront(glm::vec3(0.0f, 0.0f, -1.0f)),
+	cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)),
+	yaw(-90.0f),
+	pitch(0.0f),
+	fov(55.0f),
+	CAM_SPEED(5.5f),
+	SENSITIVITY(0.1f),
+	WORLD_UP(glm::vec3(0.0f, 1.0f, 0.0f))
 {
 	updateCameraVectors();
 }
@@ -65,6 +73,26 @@ void Camera::handleScroll(float yOffset)
         fov = 1.0f;
     if (fov > 90.0f)
         fov = 90.0f;
+}
+
+void Camera::setPosition(float x, float y, float z)
+{
+	cameraPos = glm::vec3(x, y, z);
+}
+
+void Camera::setPosition(glm::vec3 position)
+{
+	cameraPos = position;
+}
+
+void Camera::setPitch(float pitch)
+{
+	this->pitch = pitch;
+}
+
+void Camera::setYaw(float yaw)
+{
+	this->yaw = yaw;
 }
 
 glm::mat4 Camera::getViewMatrix() const
